@@ -4,6 +4,7 @@ import { Hero } from './components/Hero';
 import { ProblemComparison } from './components/ProblemComparison';
 import { HowItWorks } from './components/HowItWorks';
 import { Packages } from './components/Packages';
+import { PlzCheckerSection } from './components/PlzCheckerSection';
 import { FaqSection } from './components/FaqSection';
 import { FunnelModal } from './components/FunnelModal';
 import { AdminLeadDrawer } from './components/AdminLeadDrawer';
@@ -11,22 +12,30 @@ import { Footer } from './components/Footer';
 import { PackageType, LeadData } from './types';
 
 export default function App() {
-  const [isFunnelOpen, setIsFunnelOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState<PackageType>('paket-a');
+  const [isFunnelOpen, setIsFunnelOpen] = useState<boolean>(false);
+  const [selectedPackage, setSelectedPackage] = useState<PackageType>('A');
+  const [prefillPlz, setPrefillPlz] = useState<string>('');
   const [lastUpdatedLeads, setLastUpdatedLeads] = useState<number>(Date.now());
 
-  const scrollToPackages = () => {
-    const el = document.getElementById('pakete');
+  const handleNavigate = (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const offset = 80;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = el.getBoundingClientRect().top;
+      const offsetPosition = elementRect - bodyRect - offset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
     }
   };
 
   const handleSelectPackage = (pkg: PackageType) => {
     setSelectedPackage(pkg);
-    const eventName = pkg === 'paket-b' ? 'select_package_B' : 'select_package_A';
-    
-    // Fire tracking event
+    const eventName = pkg === 'B' ? 'select_package_B' : 'select_package_A';
+
     if (typeof window !== 'undefined') {
       console.log(`📡 [Tracking] Event fired: ${eventName}`, { package: pkg });
       // @ts-ignore
@@ -39,45 +48,67 @@ export default function App() {
     setIsFunnelOpen(true);
   };
 
+  const handleHeroCta = () => {
+    handleSelectPackage('A');
+  };
+
+  const handleReservePlz = (plz: string) => {
+    setPrefillPlz(plz);
+    handleSelectPackage(selectedPackage);
+  };
+
+  const handlePackageChange = (pkg: PackageType) => {
+    setSelectedPackage(pkg);
+  };
+
   const handleLeadSubmitted = (lead: LeadData) => {
     setLastUpdatedLeads(Date.now());
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F8F6] text-[#1C1917] flex flex-col font-sans selection:bg-[#9A7B4F] selection:text-white">
-      {/* Header */}
-      <Header onScrollToPackages={scrollToPackages} />
+    <div className="min-h-screen bg-[#F9F8F6] text-[#18181B] flex flex-col font-jakarta selection:bg-[#9A7B4F] selection:text-white">
+      {/* 1. Header (fixed h-20) */}
+      <Header
+        spotsFree={14}
+        onNavigate={handleNavigate}
+        onGoPakete={() => handleNavigate('pakete')}
+      />
 
-      {/* Main Content Sections (1:1 Text & Structure) */}
+      {/* Main Content Sections */}
       <main className="flex-grow">
-        {/* Sektion 1: Hero-Section (Above the Fold) */}
-        <Hero onScrollToPackages={scrollToPackages} />
+        {/* 2. Hero Section (Above the Fold) */}
+        <Hero onOpenHero={handleHeroCta} />
 
-        {/* Sektion 2: Problem & Kontrast */}
+        {/* 3. Problem & Kontrast */}
         <ProblemComparison />
 
-        {/* Sektion 3: So funktioniert der wöchentliche Autopilot (3 Schritte) */}
+        {/* 4. Ablauf (3 Schritte) */}
         <HowItWorks />
 
-        {/* Sektion 4: Die Paket-Auswahl (A/B-Test-Sektion) */}
+        {/* 5. Pakete (A/B-Auswahl) */}
         <Packages onSelectPackage={handleSelectPackage} />
 
-        {/* Sektion 5: Einwandbehandlung (FAQ) */}
+        {/* 6. PLZ-Check */}
+        <PlzCheckerSection onReservePlz={handleReservePlz} />
+
+        {/* 7. Einwandbehandlung (FAQ) */}
         <FaqSection />
       </main>
 
-      {/* Footer */}
+      {/* 8. Footer */}
       <Footer />
 
-      {/* Interaktives Pop-up-Modal: Der 3-Schritte-Micro-Funnel */}
+      {/* 3-Schritte-Konfigurator-Modal */}
       <FunnelModal
         isOpen={isFunnelOpen}
         onClose={() => setIsFunnelOpen(false)}
         selectedPackage={selectedPackage}
+        prefillPlz={prefillPlz}
+        onPackageChange={handlePackageChange}
         onLeadSubmitted={handleLeadSubmitted}
       />
 
-      {/* Diskreter Tester/Admin Lead Viewer */}
+      {/* Diskreter Lead-Viewer / CSV-Export */}
       <AdminLeadDrawer lastUpdated={lastUpdatedLeads} />
     </div>
   );

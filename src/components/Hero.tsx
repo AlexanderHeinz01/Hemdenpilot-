@@ -1,127 +1,224 @@
-import React from 'react';
-import { Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShieldCheck, Shirt, Clock, Image as ImageIcon, Upload, X } from 'lucide-react';
 
 interface HeroProps {
-  onScrollToPackages: () => void;
+  onOpenHero: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onScrollToPackages }) => {
+const STORAGE_KEY = 'hemdenpilot_hero_image';
+
+export const Hero: React.FC<HeroProps> = ({ onOpenHero }) => {
+  const [heroImage, setHeroImage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Hydrate image from localStorage or check for public image assets
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setHeroImage(stored);
+        return;
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+
+    // Check if an image file was placed in /hero-shirts.jpg or /assets/hero-shirts.jpg
+    const testImg = new Image();
+    testImg.onload = () => {
+      setHeroImage('/hero-shirts.jpg');
+    };
+    testImg.src = '/hero-shirts.jpg';
+  }, []);
+
+  const handleFile = (file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        setHeroImage(result);
+        try {
+          localStorage.setItem(STORAGE_KEY, result);
+        } catch {
+          // LocalStorage quota may be exceeded for large images
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+    if (e.target) e.target.value = '';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFile(file);
+    }
+  };
+
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setHeroImage(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Ignore
+    }
+  };
+
   return (
-    <section className="bg-[#0F172A] text-[#F9F8F6] pt-32 pb-24 lg:pt-40 lg:pb-32 border-b border-[#E5E0D8]/10 overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6 sm:px-8">
+    <section
+      id="top"
+      data-screen-label="Hero"
+      className="bg-[#0B111E] text-[#F9F8F6] pt-[clamp(136px,14vw,176px)] pb-[clamp(96px,10vw,128px)] border-b border-white/[0.08] overflow-hidden"
+    >
+      <div className="max-w-[1200px] mx-auto px-5 md:px-8 grid grid-cols-1 min-[900px]:grid-cols-2 gap-[clamp(56px,7vw,96px)] items-center">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          
-          {/* Left Column: Text & Conversion */}
-          <div className="lg:col-span-7 flex flex-col items-start">
-            
-            {/* Badge (oben klein) */}
-            <div className="mb-8">
-              <span className="uppercase tracking-[0.2em] text-xs font-medium text-[#9A7B4F] border border-[#9A7B4F]/40 px-3.5 py-1.5 inline-block bg-[#0F172A]">
-                Exklusiver Pilotstart in Stuttgart – Nur 50 Plätze in den PLZ-Gebieten 701–705
-              </span>
+        {/* Left Column: Text & CTA */}
+        <div className="flex flex-col items-start">
+          <span className="inline-block border border-[#9A7B4F]/50 py-[7px] px-3.5 text-[11px] font-semibold tracking-[0.22em] text-[#9A7B4F] mb-9 font-jakarta">
+            EXKLUSIVER PILOTSTART IN STUTTGART
+          </span>
+
+          <h1 className="font-cormorant font-medium text-[clamp(40px,5.4vw,64px)] leading-[1.1] tracking-[-0.01em] mb-7 text-balance">
+            Jeden Montagmorgen fünf <em className="italic text-[#D9C3A0]">makellos gebügelte</em> Hemden im Schrank.
+          </h1>
+
+          <p className="text-[18px] leading-[1.65] text-[#D6D3D1] mb-11 max-w-[560px] font-jakarta">
+            Der erste vollautomatische Hemden-Autopilot für Partner, Berater und Führungskräfte in Stuttgart. Wir tauschen jeden Sonntagabend kontaktlos an Ihrer Tür – oder montags am Empfang Ihrer Kanzlei – fünf getragene gegen fünf frisch aufbereitete Business-Hemden.
+          </p>
+
+          <button
+            onClick={onOpenHero}
+            className="inline-flex items-center gap-3 py-[18px] px-8 bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[12px] font-semibold tracking-[0.12em] uppercase cursor-pointer mb-12 hover:bg-[#866941] transition-colors"
+          >
+            Wunsch-Modell &amp; PLZ prüfen →
+          </button>
+
+          {/* Trust-Leiste */}
+          <div className="w-full pt-7 border-t border-[#F9F8F6]/12 flex flex-wrap gap-x-8 gap-y-4 text-[13px] text-[#F9F8F6]/88 font-jakarta">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-[18px] h-[18px] text-[#9A7B4F] shrink-0 stroke-[1.5]" />
+              <span>100 % Kontaktloser Tausch</span>
             </div>
 
-            {/* Headline (H1) */}
-            <h1 className="font-serif-luxury text-3xl sm:text-5xl lg:text-[3.25rem] font-medium tracking-tight text-[#F9F8F6] leading-[1.18] mb-6">
-              Jeden Montagmorgen 5 perfekt gebügelte Hemden im Schrank. Ohne Waschen. Ohne Reinigung. Ohne Zeitverlust.
-            </h1>
-
-            {/* Subheadline */}
-            <p className="text-[#F9F8F6]/80 text-base sm:text-lg leading-relaxed mb-10 max-w-xl font-sans font-normal">
-              Der erste vollautomatische Hemden-Autopilot für Führungskräfte, Berater und Partner in Stuttgart. Wir tauschen jeden Sonntagabend kontaktlos an deiner Tür (oder montags am Büro-Empfang) 5 getragene gegen 5 frisch aufbereitete Business-Hemden.
-            </p>
-
-            {/* Primärer CTA-Button (scrollt direkt zur Paket-Auswahl in Sektion 4) */}
-            <div className="mb-12 w-full sm:w-auto">
-              <button
-                onClick={onScrollToPackages}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 bg-[#9A7B4F] hover:bg-[#8A6D43] text-[#F9F8F6] font-sans font-medium text-sm tracking-wide transition-all duration-200 border border-[#9A7B4F] cursor-pointer rounded-none active:scale-[0.99]"
-              >
-                <span>Verfügbarkeit & Wunsch-Paket prüfen →</span>
-              </button>
+            <div className="flex items-center gap-2.5">
+              <Shirt className="w-[18px] h-[18px] text-[#9A7B4F] shrink-0 stroke-[1.5]" />
+              <span>Hängend geliefert (Keine Legebrüche)</span>
             </div>
 
-            {/* Trust-Leiste unter dem Button (3 Bullet-Icons in Messing #9A7B4F) */}
-            <div className="w-full pt-8 border-t border-[#E5E0D8]/15 space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="text-[#9A7B4F] font-bold text-sm shrink-0 mt-0.5">✓</span>
-                <span className="text-xs sm:text-sm text-[#F9F8F6]/90">
-                  <strong className="font-semibold text-[#F9F8F6]">100 % Kontaktloser Tausch</strong> (Kein Warten auf Lieferfahrer)
-                </span>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="text-[#9A7B4F] font-bold text-sm shrink-0 mt-0.5">✓</span>
-                <span className="text-xs sm:text-sm text-[#F9F8F6]/90">
-                  <strong className="font-semibold text-[#F9F8F6]">Hängend aufbereitet</strong> (Keine Legebrüche aus Versandkartons)
-                </span>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="text-[#9A7B4F] font-bold text-sm shrink-0 mt-0.5">✓</span>
-                <span className="text-xs sm:text-sm text-[#F9F8F6]/90">
-                  <strong className="font-semibold text-[#F9F8F6]">Monatlich kündbar</strong> (Volle Flexibilität bei Urlaub & Projektpausen)
-                </span>
-              </div>
+            <div className="flex items-center gap-2.5">
+              <Clock className="w-[18px] h-[18px] text-[#9A7B4F] shrink-0 stroke-[1.5]" />
+              <span>Monatlich flexibel pausier- &amp; kündbar</span>
             </div>
-
           </div>
+        </div>
 
-          {/* Right Column: Edles Produktbild der 5 hängenden Hemden (Quiet Luxury Darstellung) */}
-          <div className="lg:col-span-5">
-            <div className="relative border border-[#E5E0D8]/15 bg-[#141E33] p-6 sm:p-8 rounded-none">
-              
-              {/* Luxury Frame Accent */}
-              <div className="absolute top-2 left-2 right-2 bottom-2 border border-[#9A7B4F]/20 pointer-events-none"></div>
+        {/* Right Column: Visual / Image Slot Showcase */}
+        <div className="relative pb-8 pl-8">
+          <div
+            className={`relative aspect-[4/5] w-full border-l border-[#9A7B4F]/35 bg-[#141B2B] overflow-hidden transition-colors ${
+              isDragging ? 'ring-2 ring-[#9A7B4F] bg-[#1a2338]' : ''
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Hidden file input for file browsing */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/png,image/jpeg,image/webp,image/avif"
+              onChange={handleInputChange}
+              className="hidden"
+            />
 
-              {/* Title / Spec Label */}
-              <div className="flex items-center justify-between pb-4 border-b border-[#E5E0D8]/10 text-xs text-[#9A7B4F] tracking-[0.2em] uppercase font-medium">
-                <span>Wochen-Rotation</span>
-                <span>5 Hemden · Hängend</span>
-              </div>
-
-              {/* Graphical Bespoke Shirts Visualizer (5 Pressed Shirts on Walnut Hangers) */}
-              <div className="py-8 space-y-3">
-                {[
-                  { color: 'Reinweiß', type: 'Two-Ply Vollzwirn', tone: 'bg-white text-slate-800' },
-                  { color: 'Hellblau', type: 'Feiner Twill', tone: 'bg-[#E3EDF7] text-slate-800' },
-                  { color: 'Reinweiß', type: 'Royal Oxford', tone: 'bg-white text-slate-800' },
-                  { color: 'Hellblau', type: 'Feinstruktur', tone: 'bg-[#E3EDF7] text-slate-800' },
-                  { color: 'Reinweiß', type: 'Popeline bügelleicht', tone: 'bg-white text-slate-800' },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3.5 bg-[#0F172A] border border-[#E5E0D8]/10 transition-all hover:border-[#9A7B4F]/50"
+            {heroImage ? (
+              /* Filled State: Active Image */
+              <div className="relative w-full h-full group">
+                <img
+                  src={heroImage}
+                  alt="5 gestärkte weiße & hellblaue Hemden auf dunklen Walnussholzbügeln, warmes Licht"
+                  className="w-full h-full object-cover select-none"
+                  draggable={false}
+                />
+                
+                {/* Subtle top-right hover controls */}
+                <div className="absolute top-3 right-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Bild ersetzen"
+                    className="flex items-center gap-1.5 py-1.5 px-3 bg-[#0B111E]/85 backdrop-blur text-white text-[11px] font-jakarta font-medium border border-white/15 hover:border-[#9A7B4F] hover:text-[#9A7B4F] transition-all cursor-pointer rounded-none"
                   >
-                    <div className="flex items-center gap-3">
-                      {/* Brass Hanger Hook Indicator */}
-                      <span className="w-1.5 h-1.5 rounded-none bg-[#9A7B4F]"></span>
-                      <span className="font-serif-luxury text-sm font-medium text-[#F9F8F6]">
-                        Hemd 0{idx + 1}
-                      </span>
-                      <span className="text-xs text-[#F9F8F6]/50">· {item.color}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-[#9A7B4F] tracking-wider uppercase font-medium">
-                        Schrankfertig
-                      </span>
-                      <span className="w-2 h-2 border border-[#9A7B4F] bg-[#9A7B4F]/20"></span>
-                    </div>
-                  </div>
-                ))}
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Ersetzen</span>
+                  </button>
+                  <button
+                    onClick={handleRemoveImage}
+                    title="Bild entfernen"
+                    className="p-1.5 bg-[#0B111E]/85 backdrop-blur text-white/70 hover:text-white text-[11px] border border-white/15 hover:border-red-400/50 transition-all cursor-pointer rounded-none"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
+            ) : (
+              /* Empty State: Quiet Luxury Dashed Placeholder */
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center cursor-pointer group select-none"
+              >
+                {/* Dashed frame border */}
+                <div
+                  className={`absolute inset-4 border border-dashed transition-colors duration-200 pointer-events-none ${
+                    isDragging
+                      ? 'border-[#9A7B4F] bg-[#9A7B4F]/10'
+                      : 'border-white/15 group-hover:border-[#9A7B4F]/50'
+                  }`}
+                />
 
-              {/* Bottom Caption */}
-              <div className="pt-4 border-t border-[#E5E0D8]/10 flex items-center justify-between text-xs text-[#F9F8F6]/60">
-                <span>Massivholzbügel & Staubschutz</span>
-                <span className="text-[#9A7B4F] font-medium">Sonntag 20:00 Uhr</span>
+                <div className="relative z-10 flex flex-col items-center max-w-[320px] px-4">
+                  <ImageIcon className="w-8 h-8 text-[#D6D3D1] opacity-45 mb-4 group-hover:opacity-75 transition-opacity stroke-[1.5]" />
+                  <p className="font-jakarta text-[13px] font-medium leading-[1.4] text-[#D6D3D1]/80 mb-2">
+                    Hero-Bild: 5 gestärkte weiße &amp; hellblaue Hemden auf dunklen Walnussholzbügeln, warmes Licht
+                  </p>
+                  <p className="font-jakarta text-[11px] text-[#D6D3D1]/60 group-hover:text-[#D6D3D1] transition-colors">
+                    or <u className="underline underline-offset-2">browse files</u>
+                  </p>
+                </div>
               </div>
-
-            </div>
+            )}
           </div>
 
+          {/* Overlapping Quote Badge (Pinned to bottom-left corner) */}
+          <div className="absolute left-0 bottom-0 max-w-[300px] bg-[#0B111E] border border-[#9A7B4F]/40 p-5 pointer-events-none z-10 shadow-2xl">
+            <p className="m-0 font-cormorant italic font-medium text-[20px] leading-[1.3] text-[#F9F8F6]">
+              „0 Minuten Zeitaufwand pro Woche. Kein Buchen. Kein Kassenzettel.“
+            </p>
+          </div>
         </div>
 
       </div>

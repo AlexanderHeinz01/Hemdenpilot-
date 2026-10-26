@@ -1,172 +1,179 @@
 import React, { useState } from 'react';
-import { MapPin, Search, CheckCircle, Clock, ArrowRight } from 'lucide-react';
-import { KNOWN_ROUTES, lookupPlz } from '../data/mockRoutes';
+import { ROUTES, lookupPlz } from '../data/mockRoutes';
 import { PlzRouteInfo } from '../types';
 
 interface PlzCheckerSectionProps {
-  onSelectPlz: (plz: string) => void;
+  onReservePlz: (plz: string) => void;
 }
 
-export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onSelectPlz }) => {
-  const [query, setQuery] = useState('');
-  const [searchResult, setSearchResult] = useState<PlzRouteInfo | null>(null);
+export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReservePlz }) => {
+  const [plzQuery, setPlzQuery] = useState('');
+  const [plzResult, setPlzResult] = useState<PlzRouteInfo | null>(null);
+
+  const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.replace(/\D/g, '').slice(0, 5);
+    setPlzQuery(v);
+    if (v.length === 5) {
+      setPlzResult(lookupPlz(v));
+    } else {
+      setPlzResult(null);
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query) return;
-    const res = lookupPlz(query);
-    setSearchResult(res);
+    if (plzQuery.length === 5) {
+      setPlzResult(lookupPlz(plzQuery));
+    }
   };
 
-  const activeStuttgart = ['70173', '70174', '70176', '70178', '70182', '70184', '70191', '70192', '70197', '70597'];
-  const upcomingStuttgart = ['70190', '70567', '70569', '70372', '70469'];
+  const pickChip = (plz: string) => {
+    setPlzQuery(plz);
+    setPlzResult(lookupPlz(plz));
+  };
+
+  const activeChips = Object.keys(ROUTES)
+    .filter((p) => ROUTES[p][1] === 'active')
+    .map((p) => ({
+      plz: p,
+      name: ROUTES[p][0].split('/')[0].trim(),
+    }));
+
+  const upcomingChips = Object.keys(ROUTES)
+    .filter((p) => ROUTES[p][1] === 'prep')
+    .map((p) => ({
+      plz: p,
+      name: ROUTES[p][0].split('/')[0].trim(),
+    }));
+
+  const getStatusText = (r: PlzRouteInfo) => {
+    if (r.status === 'active') return `Pilot-Route aktiv · noch ${r.n} Plätze frei`;
+    if (r.status === 'prep') return `In Vorbereitung · noch ${r.n} Reservierungen bis zum Tour-Start`;
+    return 'Aktuell nur in Stuttgart aktiv · Vormerkung möglich';
+  };
 
   return (
-    <section id="plz-check" className="py-20 bg-slate-50 border-t border-slate-200">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
+    <section
+      id="plz-check"
+      data-screen-label="PLZ-Check"
+      className="bg-[#F2EFE9] py-[clamp(96px,10vw,128px)] border-b border-[#E5E0D8]"
+    >
+      <div className="max-w-[1024px] mx-auto px-5 md:px-8">
         
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <span className="text-xs font-bold tracking-wider text-sky-600 uppercase mb-2 block">
-            Stuttgart Routen-Explorer
+        {/* Header */}
+        <div className="max-w-[720px] mx-auto mb-12 text-center">
+          <span className="block text-[11px] font-semibold tracking-[0.22em] text-[#9A7B4F] mb-[18px] font-jakarta">
+            STUTTGARTER ROUTEN-ÜBERSICHT
           </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">
-            Liefergebiet & PLZ-Verfügbarkeit in Stuttgart
+          <h2 className="font-cormorant font-medium text-[clamp(34px,4.2vw,50px)] leading-[1.1] m-0 mb-5 text-[#18181B]">
+            Liefergebiet &amp; Verfügbarkeit in <em className="italic">Stuttgart</em>
           </h2>
-          <p className="text-slate-600 text-sm sm:text-base">
-            Unser Pilot startet exklusiv im Stuttgarter Stadtgebiet mit festen sonntäglichen Kurier-Routen. Prüfe direkt deine Straße oder Kanzleiadresse.
+          <p className="m-0 text-[16px] leading-[1.7] text-[#57534E] text-pretty font-jakarta">
+            Unser Pilot startet exklusiv im Stuttgarter Stadtgebiet mit festen sonntäglichen Kurier-Routen. Prüfen Sie direkt die Postleitzahl Ihrer Wohnung oder Kanzlei.
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="max-w-xl mx-auto mb-10">
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="w-5 h-5 text-slate-400 absolute left-3 top-3.5" />
-              <input
-                type="text"
-                placeholder="Stuttgarter PLZ (z. B. 70173, 70174, 70192)"
-                value={query}
-                maxLength={5}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  setQuery(val);
-                  if (val.length === 5) {
-                    setSearchResult(lookupPlz(val));
-                  } else {
-                    setSearchResult(null);
-                  }
-                }}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 text-sm focus:outline-none focus:border-sky-500 shadow-sm"
-              />
+        {/* Input Form */}
+        <form onSubmit={handleSearch} className="max-w-[560px] mx-auto flex gap-0">
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={5}
+            placeholder="Stuttgarter PLZ, z. B. 70173"
+            value={plzQuery}
+            onChange={handleQueryChange}
+            className="flex-1 min-w-0 p-4 px-[18px] bg-[#FFFFFF] border border-[#E5E0D8] border-r-0 rounded-none font-jakarta text-[15px] text-[#18181B] outline-none focus:border-[#9A7B4F]"
+          />
+          <button
+            type="submit"
+            className="px-7 bg-[#0B111E] text-[#F9F8F6] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.16em] uppercase cursor-pointer hover:bg-[#18181B] transition-colors"
+          >
+            Prüfen
+          </button>
+        </form>
+
+        {/* Live Result Box */}
+        {plzResult && (
+          <div
+            className={`max-w-[560px] mx-auto mt-3 bg-[#FFFFFF] border p-5 px-[22px] flex items-center justify-between gap-5 flex-wrap ${
+              plzResult.status === 'active' ? 'border-[#9A7B4F]' : 'border-[#E5E0D8]'
+            }`}
+          >
+            <div className="flex flex-col gap-1.5 min-w-0">
+              <span className="font-cormorant text-[22px] font-semibold text-[#18181B]">
+                PLZ {plzResult.plz}{' '}
+                <span className="font-jakarta text-[13px] font-normal text-[#57534E]">
+                  · {plzResult.district}
+                </span>
+              </span>
+              <span
+                className={`text-[11px] font-semibold tracking-[0.12em] uppercase font-jakarta ${
+                  plzResult.status === 'active' ? 'text-[#9A7B4F]' : 'text-[#57534E]'
+                }`}
+              >
+                {getStatusText(plzResult)}
+              </span>
             </div>
+
             <button
-              type="submit"
-              className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition shrink-0 cursor-pointer"
+              onClick={() => onReservePlz(plzResult.plz)}
+              className="py-3 px-[18px] bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.14em] uppercase cursor-pointer whitespace-nowrap hover:bg-[#866941] transition-colors"
             >
-              Prüfen
+              Reservieren →
             </button>
-          </form>
+          </div>
+        )}
 
-          {/* Search Result Card */}
-          {searchResult && (
-            <div className="mt-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-md">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-slate-900 text-base">PLZ {searchResult.plz}</span>
-                    <span className="text-slate-400">·</span>
-                    <span className="text-sm text-slate-600">{searchResult.district} ({searchResult.city})</span>
-                  </div>
-
-                  {searchResult.status === 'active' ? (
-                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 w-fit">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>Stuttgart Pilot-Route aktiv: Noch {searchResult.spotsRemaining} von 50 Plätzen verfügbar</span>
-                    </div>
-                  ) : searchResult.status === 'in_preparation' ? (
-                    <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200 w-fit">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>In Vorbereitung: Noch {searchResult.reservationsNeeded} Reservierungen bis zum Tour-Start in Stuttgart</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 w-fit">
-                      <span>Aktuell nur in Stuttgart aktiv – Vormerkung für spätere Ausbaustufen möglich</span>
-                    </div>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => onSelectPlz(searchResult.plz)}
-                  className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer shadow-sm"
-                >
-                  <span>Reservieren</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Stuttgart Neighborhood Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        {/* 2-Column Grid: Active & Upcoming */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#E5E0D8] border border-[#E5E0D8] mt-14">
           
-          <div className="p-5 rounded-2xl bg-white border border-slate-200">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-sky-600" />
-                <span>Aktive Stuttgarter Pilot-Touren</span>
-              </h4>
-              <span className="text-xs text-emerald-600 font-semibold">Sofort buchbar</span>
+          {/* Active Tours */}
+          <div className="bg-[#FFFFFF] p-7">
+            <div className="flex justify-between items-baseline gap-3 mb-4 pb-3.5 border-b border-[#E5E0D8]">
+              <span className="font-cormorant text-[22px] font-semibold text-[#18181B]">
+                Aktive Pilot-Touren
+              </span>
+              <span className="text-[10px] font-semibold tracking-[0.18em] text-[#9A7B4F] font-jakarta">
+                SOFORT BUCHBAR
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {activeStuttgart.map((p) => {
-                const info = KNOWN_ROUTES[p];
-                return (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      setQuery(p);
-                      setSearchResult(info);
-                      onSelectPlz(p);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-sky-50 hover:border-sky-300 border border-slate-200 text-xs text-slate-700 transition flex items-center gap-1.5 cursor-pointer text-left"
-                  >
-                    <span className="font-mono font-semibold">{p}</span>
-                    <span className="text-slate-400">·</span>
-                    <span className="truncate max-w-[140px]">{info.district.split('/')[0]}</span>
-                  </button>
-                );
-              })}
+              {activeChips.map((c) => (
+                <button
+                  key={c.plz}
+                  type="button"
+                  onClick={() => pickChip(c.plz)}
+                  className="flex gap-1.5 items-center py-1.5 px-2.5 bg-[#F9F8F6] border border-[#E5E0D8] rounded-none font-jakarta text-[12px] text-[#18181B] cursor-pointer hover:border-[#9A7B4F] transition-colors"
+                >
+                  <strong className="font-semibold tabular-nums">{c.plz}</strong>
+                  <span className="text-[#57534E]">{c.name}</span>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-600" />
-                <span>Stuttgart: In Vorbereitung</span>
-              </h4>
-              <span className="text-xs text-amber-700 font-semibold">Start ab 15 Vormerkungen</span>
+          {/* Upcoming Tours */}
+          <div className="bg-[#FFFFFF] p-7">
+            <div className="flex justify-between items-baseline gap-3 mb-4 pb-3.5 border-b border-[#E5E0D8]">
+              <span className="font-cormorant text-[22px] font-semibold text-[#18181B]">
+                In Vorbereitung
+              </span>
+              <span className="text-[10px] font-semibold tracking-[0.18em] text-[#57534E] font-jakarta">
+                START AB 15 VORMERKUNGEN
+              </span>
             </div>
             <div className="flex flex-wrap gap-2">
-              {upcomingStuttgart.map((p) => {
-                const info = KNOWN_ROUTES[p];
-                return (
-                  <button
-                    key={p}
-                    onClick={() => {
-                      setQuery(p);
-                      setSearchResult(info);
-                      onSelectPlz(p);
-                    }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-amber-50 hover:border-amber-300 border border-slate-200 text-xs text-slate-700 transition flex items-center gap-1.5 cursor-pointer text-left"
-                  >
-                    <span className="font-mono font-semibold">{p}</span>
-                    <span className="text-slate-400">·</span>
-                    <span className="truncate max-w-[140px]">{info.district.split('/')[0]}</span>
-                  </button>
-                );
-              })}
+              {upcomingChips.map((c) => (
+                <button
+                  key={c.plz}
+                  type="button"
+                  onClick={() => pickChip(c.plz)}
+                  className="flex gap-1.5 items-center py-1.5 px-2.5 bg-[#F9F8F6] border border-[#E5E0D8] rounded-none font-jakarta text-[12px] text-[#18181B] cursor-pointer hover:border-[#9A7B4F] transition-colors"
+                >
+                  <strong className="font-semibold tabular-nums">{c.plz}</strong>
+                  <span className="text-[#57534E]">{c.name}</span>
+                </button>
+              ))}
             </div>
           </div>
 

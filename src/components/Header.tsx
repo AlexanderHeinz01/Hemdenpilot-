@@ -1,34 +1,84 @@
 import React from 'react';
 
 interface HeaderProps {
-  onScrollToPackages: () => void;
+  spotsFree?: number;
+  onNavigate: (id: string, e: React.MouseEvent) => void;
+  onGoPakete: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onScrollToPackages }) => {
+export const Header: React.FC<HeaderProps> = ({
+  spotsFree = 14,
+  onNavigate,
+  onGoPakete,
+}) => {
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-[#0F172A]/95 backdrop-blur-md border-b border-[#E5E0D8]/10 transition-all">
-      <div className="max-w-6xl mx-auto px-6 sm:px-8 h-20 flex items-center justify-between gap-8">
+    <header className="fixed top-0 left-0 right-0 z-40 h-20 bg-[#0B111E]/95 backdrop-blur-md border-b border-white/10 text-[#F9F8F6]">
+      <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-20 flex items-center justify-between gap-6">
         
-        {/* Brand Wordmark (Savile Row / Concierge Aesthetic) */}
-        <a href="#" className="flex items-center gap-2 tracking-[0.2em] uppercase text-sm sm:text-base font-medium text-[#F9F8F6] whitespace-nowrap shrink-0">
-          <span className="font-serif-luxury text-lg tracking-[0.15em] font-normal">HEMDENPILOT</span>
+        {/* Brand Lockup */}
+        <a
+          href="#top"
+          onClick={(e) => onNavigate('top', e)}
+          className="flex flex-col gap-0.5 text-[#F9F8F6] shrink-0"
+        >
+          <span className="font-cormorant text-[20px] font-semibold tracking-[0.15em] leading-none">
+            HEMDENPILOT
+          </span>
+          <span className="text-[9px] font-medium tracking-[0.22em] text-[#F9F8F6]/55 font-jakarta">
+            EXECUTIVE VALET • STUTTGART
+          </span>
         </a>
 
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-medium uppercase tracking-[0.15em] text-[#F9F8F6]/70">
-          <a href="#vorteile" className="hover:text-[#9A7B4F] transition-colors whitespace-nowrap shrink-0">Problem & Kontrast</a>
-          <a href="#ablauf" className="hover:text-[#9A7B4F] transition-colors whitespace-nowrap shrink-0">So funktioniert's</a>
-          <a href="#pakete" className="hover:text-[#9A7B4F] transition-colors whitespace-nowrap shrink-0">Paket-Auswahl</a>
-          <a href="#faq" className="hover:text-[#9A7B4F] transition-colors whitespace-nowrap shrink-0">FAQ</a>
+        {/* Navigation Links (visible >= 1080px) */}
+        <nav className="hidden min-[1080px]:flex items-center gap-8 text-[12px] font-medium text-[#F9F8F6]/72 font-jakarta">
+          <a
+            href="#ablauf"
+            onClick={(e) => onNavigate('ablauf', e)}
+            className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
+          >
+            Das Prinzip
+          </a>
+          <a
+            href="#vergleich"
+            onClick={(e) => onNavigate('vergleich', e)}
+            className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
+          >
+            Leistungsvergleich
+          </a>
+          <a
+            href="#pakete"
+            onClick={(e) => onNavigate('pakete', e)}
+            className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
+          >
+            Modelle &amp; Preise
+          </a>
+          <a
+            href="#faq"
+            onClick={(e) => onNavigate('faq', e)}
+            className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
+          >
+            FAQ
+          </a>
         </nav>
 
-        {/* Primary Action Button */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Right Zone: Pulsing Status & Action */}
+        <div className="flex items-center gap-5 shrink-0 font-jakarta">
+          <div className="hidden min-[1080px]:flex items-center gap-2 text-[11px] text-[#F9F8F6]/72 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#9A7B4F] inline-block animate-hp-pulse" />
+            <span>
+              Pilotphase Stuttgart:{' '}
+              <strong className="text-[#F9F8F6] font-semibold">
+                {spotsFree} von 50
+              </strong>{' '}
+              Plätzen frei
+            </span>
+          </div>
+
           <button
-            onClick={onScrollToPackages}
-            className="px-5 py-2.5 text-xs uppercase tracking-[0.15em] font-medium text-[#F9F8F6] bg-transparent border border-[#9A7B4F] hover:bg-[#9A7B4F] hover:text-white transition-all duration-200 rounded-none cursor-pointer whitespace-nowrap shrink-0"
+            onClick={onGoPakete}
+            className="py-2.5 px-[18px] bg-transparent border border-[#9A7B4F] text-[#F9F8F6] text-[11px] font-semibold tracking-[0.14em] uppercase cursor-pointer rounded-none hover:bg-[#9A7B4F] transition-colors whitespace-nowrap"
           >
-            Paket-Auswahl
+            Verfügbarkeit prüfen
           </button>
         </div>
 

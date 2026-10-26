@@ -2,82 +2,71 @@ import React from 'react';
 
 export const ProblemComparison: React.FC = () => {
   return (
-    <section id="vorteile" className="py-24 lg:py-32 bg-[#F9F8F6] border-b border-[#E5E0D8]">
-      <div className="max-w-5xl mx-auto px-6 sm:px-8">
+    <section
+      id="vergleich"
+      data-screen-label="Problem"
+      className="bg-[#F9F8F6] py-[clamp(96px,10vw,128px)] border-b border-[#E5E0D8]"
+    >
+      <div className="max-w-[1200px] mx-auto px-5 md:px-8">
         
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="font-serif-luxury text-3xl sm:text-4xl lg:text-[2.6rem] font-medium text-[#1C1917] tracking-tight leading-tight mb-5">
-            Deine Zeit ist zu teuer für Öffnungszeiten und Paketstationen.
+        {/* Header */}
+        <div className="max-w-[760px] mb-16">
+          <span className="block text-[11px] font-semibold tracking-[0.22em] text-[#9A7B4F] mb-[18px] font-jakarta">
+            WARUM BESTEHENDE LÖSUNGEN SCHEITERN
+          </span>
+          <h2 className="font-cormorant font-medium text-[clamp(34px,4.2vw,50px)] leading-[1.1] m-0 text-[#18181B] text-balance">
+            Ihre Zeit ist zu kostbar für Öffnungszeiten und Paketstationen.
           </h2>
-          <p className="text-[#57534E] text-base sm:text-lg leading-relaxed font-sans">
-            Du trägst fünf Tage die Woche Weiß oder Hellblau. Bisher hattest du drei Optionen – und jede davon kostet dich Nerven:
-          </p>
         </div>
 
-        {/* Strukturierte Vergleichstabelle / 3-spaltiges Grid mit feinen 1px-Rahmenlinien (#E5E0D8) */}
-        <div className="bg-[#FFFFFF] border border-[#E5E0D8] mb-12 overflow-hidden">
+        {/* 3-Column Grid with Hairlines */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#E5E0D8] border border-[#E5E0D8]">
           
-          {/* Table Header */}
-          <div className="hidden md:grid grid-cols-12 bg-[#F2EFE9] border-b border-[#E5E0D8] text-xs uppercase tracking-[0.15em] text-[#57534E] font-medium">
-            <div className="col-span-5 p-5 border-r border-[#E5E0D8]">
-              Die alten Optionen
-            </div>
-            <div className="col-span-7 p-5">
-              Warum sie im Arbeitsalltag scheitern
-            </div>
-          </div>
-
-          {/* Row 1 */}
-          <div className="grid grid-cols-1 md:grid-cols-12 border-b border-[#E5E0D8] p-6 md:p-0">
-            <div className="col-span-5 md:p-6 md:border-r border-[#E5E0D8] flex items-center">
-              <h3 className="font-serif-luxury text-lg md:text-xl font-medium text-[#1C1917]">
-                1. Selbst waschen & bügeln
-              </h3>
-            </div>
-            <div className="col-span-7 md:p-6 mt-2 md:mt-0 flex items-center">
-              <p className="text-sm sm:text-base text-[#57534E] leading-relaxed font-sans">
-                Kostet dich jeden Sonntag wertvolle Freizeit. Ein Hemd perfekt zu bügeln dauert 8 Minuten – macht über 3 Stunden Lebenszeit pro Monat.
-              </p>
+          {/* Card 01 */}
+          <div className="bg-[#FFFFFF] p-[clamp(32px,4vw,48px)] flex flex-col gap-5">
+            <span className="font-cormorant text-[22px] text-[#9A7B4F]">01</span>
+            <h3 className="font-cormorant font-semibold text-[26px] leading-[1.2] m-0 text-[#18181B]">
+              Selbst waschen &amp; bügeln
+            </h3>
+            <p className="m-0 text-[15px] leading-[1.7] text-[#57534E] flex-1 text-pretty font-jakarta">
+              Ein Hemd perfekt zu bügeln kostet 8 Minuten. Bei 20 Hemden im Monat opfern Sie über 3 Stunden Ihrer Wochenend-Freizeit am Bügelbrett.
+            </p>
+            <div className="pt-[18px] border-t border-[#E5E0D8] text-[11px] font-semibold tracking-[0.14em] uppercase text-[#18181B] flex items-center gap-2.5 font-jakarta">
+              <span className="w-4 h-px bg-[#9A7B4F] inline-block" />
+              ~ 3,5 Std. Zeitverlust / Monat
             </div>
           </div>
 
-          {/* Row 2 */}
-          <div className="grid grid-cols-1 md:grid-cols-12 border-b border-[#E5E0D8] p-6 md:p-0">
-            <div className="col-span-5 md:p-6 md:border-r border-[#E5E0D8] flex items-center">
-              <h3 className="font-serif-luxury text-lg md:text-xl font-medium text-[#1C1917]">
-                2. Die lokale Reinigung
-              </h3>
-            </div>
-            <div className="col-span-7 md:p-6 mt-2 md:mt-0 flex items-center">
-              <p className="text-sm sm:text-base text-[#57534E] leading-relaxed font-sans">
-                Du musst vor 18:30 Uhr dort sein, Parkplätze suchen, Kassenzettel aufbewahren und samstags wieder hin. Vergisst du es, stehst du montags ohne Hemd da.
-              </p>
-            </div>
-          </div>
-
-          {/* Row 3 */}
-          <div className="grid grid-cols-1 md:grid-cols-12 p-6 md:p-0">
-            <div className="col-span-5 md:p-6 md:border-r border-[#E5E0D8] flex items-center">
-              <h3 className="font-serif-luxury text-lg md:text-xl font-medium text-[#1C1917]">
-                3. Paket-Reinigungsdienste
-              </h3>
-            </div>
-            <div className="col-span-7 md:p-6 mt-2 md:mt-0 flex items-center">
-              <p className="text-sm sm:text-base text-[#57534E] leading-relaxed font-sans">
-                Hemden kommen gefaltet im Pappkarton zurück – inklusive unschöner Legebrüche. Und den Karton musst du trotzdem selbst zur Packstation schleppen.
-              </p>
+          {/* Card 02 */}
+          <div className="bg-[#FFFFFF] p-[clamp(32px,4vw,48px)] flex flex-col gap-5">
+            <span className="font-cormorant text-[22px] text-[#9A7B4F]">02</span>
+            <h3 className="font-cormorant font-semibold text-[26px] leading-[1.2] m-0 text-[#18181B]">
+              Die lokale Reinigung
+            </h3>
+            <p className="m-0 text-[15px] leading-[1.7] text-[#57534E] flex-1 text-pretty font-jakarta">
+              Parkplatzsuche vor 18:30 Uhr, Kassenzettel aufbewahren und samstags wieder abholen. Vergessen Sie es einmal, fehlt am Montagmorgen das frische Hemd.
+            </p>
+            <div className="pt-[18px] border-t border-[#E5E0D8] text-[11px] font-semibold tracking-[0.14em] uppercase text-[#18181B] flex items-center gap-2.5 font-jakarta">
+              <span className="w-4 h-px bg-[#9A7B4F] inline-block" />
+              8 Wege &amp; Terminstress / Monat
             </div>
           </div>
 
-        </div>
+          {/* Card 03 */}
+          <div className="bg-[#FFFFFF] p-[clamp(32px,4vw,48px)] flex flex-col gap-5">
+            <span className="font-cormorant text-[22px] text-[#9A7B4F]">03</span>
+            <h3 className="font-cormorant font-semibold text-[26px] leading-[1.2] m-0 text-[#18181B]">
+              Paket-Versanddienste
+            </h3>
+            <p className="m-0 text-[15px] leading-[1.7] text-[#57534E] flex-1 text-pretty font-jakarta">
+              Hemden kommen gefaltet im Pappkarton zurück – inklusive unschöner Legebrüche auf der Brust. Den Karton müssen Sie trotzdem selbst zur Packstation bringen.
+            </p>
+            <div className="pt-[18px] border-t border-[#E5E0D8] text-[11px] font-semibold tracking-[0.14em] uppercase text-[#18181B] flex items-center gap-2.5 font-jakarta">
+              <span className="w-4 h-px bg-[#9A7B4F] inline-block" />
+              Legebrüche &amp; Paket-Aufwand
+            </div>
+          </div>
 
-        {/* Kontrast-Satz (hervorgehoben unter der Tabelle) */}
-        <div className="bg-[#F2EFE9] border border-[#E5E0D8] p-8 sm:p-10 text-center">
-          <p className="text-[#1C1917] text-base sm:text-lg leading-relaxed font-sans">
-            <strong className="font-bold text-[#1C1917]">Unser Prinzip: Einmal einrichten, nie wieder daran denken.</strong>{' '}
-            Kein Buchen von Einzelfahrten, kein Mindestbestellwert-Rechnen, kein Kassenzettel.
-          </p>
         </div>
 
       </div>

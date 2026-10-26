@@ -1,29 +1,34 @@
-export type PackageType = 'paket-b' | 'paket-a';
-
-export interface ShirtPreferences {
-  size: string; // Kragenweite 38–44
-  fit: string; // Slim / Modern / Regular
-  brand?: string; // Olymp, Eton, Eterna, Seidensticker, etc.
-  dropoffLocation: string; // Privatadresse (Sonntagabend, 18–21 Uhr) / Büro / Kanzlei-Empfang (Montagmorgen bis 09:00 Uhr)
-}
+export type PackageType = 'A' | 'B';
 
 export interface LeadData {
-  id: string;
-  packageType: PackageType;
-  packageName: string;
-  pricePerMonth: number;
-  preferences: ShirtPreferences;
-  plz: string;
-  email: string;
-  phone?: string;
-  createdAt: string;
+  id: string; // `HP-${plz}-${4 Ziffern}`
+  event: 'lead_reserved';
+  package: PackageType;
+  packageName: string; // 'Paket A – Die Executive-Rotation' | 'Paket B – Der Logistik-Autopilot'
+  pricePerMonth: 119 | 79;
+  firstMonthPrice: 59.5 | 39.5;
+  preferences: {
+    collarSize: string;
+    fit: string;
+    colorMix: string | null;
+    brand: string;
+  };
+  handover:
+    | { type: 'B2C'; location: string; slot: 'Sonntag 18:00–21:00' }
+    | { type: 'B2B'; location: string; slot: 'Montag bis 09:00'; colleaguesInterested: boolean };
+  contact: {
+    plz: string;
+    name: string;
+    email: string;
+    phone: string | null;
+  };
+  city: 'Stuttgart';
+  createdAt: string; // ISO
 }
 
 export interface PlzRouteInfo {
   plz: string;
-  city: string;
   district: string;
-  status: 'active' | 'in_preparation' | 'planned';
-  spotsRemaining?: number;
-  reservationsNeeded?: number;
+  status: 'active' | 'prep' | 'planned';
+  n: number;
 }
