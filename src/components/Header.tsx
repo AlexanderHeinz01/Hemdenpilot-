@@ -13,7 +13,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-20 bg-[#0B111E]/95 backdrop-blur-md border-b border-white/10 text-[#F9F8F6]">
-      <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-20 flex items-center justify-between gap-6">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 md:px-8 h-20 flex items-center justify-between gap-3 sm:gap-6">
         
         {/* Brand Lockup */}
         <a
@@ -21,10 +21,10 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={(e) => onNavigate('top', e)}
           className="flex flex-col gap-0.5 text-[#F9F8F6] shrink-0"
         >
-          <span className="font-cormorant text-[20px] font-semibold tracking-[0.15em] leading-none">
+          <span className="font-cormorant text-[18px] sm:text-[20px] font-semibold tracking-[0.12em] sm:tracking-[0.15em] leading-none">
             HEMDENPILOT
           </span>
-          <span className="text-[9px] font-medium tracking-[0.22em] text-[#F9F8F6]/55 font-jakarta">
+          <span className="text-[8px] sm:text-[9px] font-medium tracking-[0.16em] sm:tracking-[0.22em] text-[#F9F8F6]/55 font-jakarta">
             EXECUTIVE VALET • STUTTGART
           </span>
         </a>
@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
         </nav>
 
         {/* Right Zone: Pulsing Status & Action */}
-        <div className="flex items-center gap-5 shrink-0 font-jakarta">
+        <div className="flex items-center gap-3 sm:gap-5 shrink-0 font-jakarta">
           <div className="hidden min-[1080px]:flex items-center gap-2 text-[11px] text-[#F9F8F6]/72 whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-[#9A7B4F] inline-block animate-hp-pulse" />
             <span>
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={onGoPakete}
-            className="py-2.5 px-[18px] bg-transparent border border-[#9A7B4F] text-[#F9F8F6] text-[11px] font-semibold tracking-[0.14em] uppercase cursor-pointer rounded-none hover:bg-[#9A7B4F] transition-colors whitespace-nowrap"
+            className="py-2 sm:py-2.5 px-3 sm:px-[18px] bg-transparent border border-[#9A7B4F] text-[#F9F8F6] text-[10px] sm:text-[11px] font-semibold tracking-[0.08em] sm:tracking-[0.14em] uppercase cursor-pointer rounded-none hover:bg-[#9A7B4F] transition-colors whitespace-nowrap min-h-[40px] flex items-center justify-center shrink-0"
           >
             Verfügbarkeit prüfen
           </button>

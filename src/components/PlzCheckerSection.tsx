@@ -74,7 +74,7 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleSearch} className="max-w-[560px] mx-auto flex gap-0">
+        <form onSubmit={handleSearch} className="max-w-[560px] mx-auto flex flex-col sm:flex-row gap-2 sm:gap-0">
           <input
             type="text"
             inputMode="numeric"
@@ -82,11 +82,11 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
             placeholder="Stuttgarter PLZ, z. B. 70173"
             value={plzQuery}
             onChange={handleQueryChange}
-            className="flex-1 min-w-0 p-4 px-[18px] bg-[#FFFFFF] border border-[#E5E0D8] border-r-0 rounded-none font-jakarta text-[15px] text-[#18181B] outline-none focus:border-[#9A7B4F]"
+            className="w-full sm:flex-1 min-w-0 p-3.5 sm:p-4 px-4 sm:px-[18px] bg-[#FFFFFF] border border-[#E5E0D8] sm:border-r-0 rounded-none font-jakarta text-[15px] text-[#18181B] outline-none focus:border-[#9A7B4F]"
           />
           <button
             type="submit"
-            className="px-7 bg-[#0B111E] text-[#F9F8F6] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.16em] uppercase cursor-pointer hover:bg-[#18181B] transition-colors"
+            className="w-full sm:w-auto px-7 py-3.5 sm:py-0 min-h-[46px] bg-[#0B111E] text-[#F9F8F6] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.16em] uppercase cursor-pointer hover:bg-[#18181B] transition-colors flex items-center justify-center text-center"
           >
             Prüfen
           </button>
@@ -95,12 +95,12 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
         {/* Live Result Box */}
         {plzResult && (
           <div
-            className={`max-w-[560px] mx-auto mt-3 bg-[#FFFFFF] border p-5 px-[22px] flex items-center justify-between gap-5 flex-wrap ${
+            className={`max-w-[560px] mx-auto mt-3 bg-[#FFFFFF] border p-4 sm:p-5 px-4 sm:px-[22px] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 sm:gap-5 ${
               plzResult.status === 'active' ? 'border-[#9A7B4F]' : 'border-[#E5E0D8]'
             }`}
           >
             <div className="flex flex-col gap-1.5 min-w-0">
-              <span className="font-cormorant text-[22px] font-semibold text-[#18181B]">
+              <span className="font-cormorant text-[20px] sm:text-[22px] font-semibold text-[#18181B]">
                 PLZ {plzResult.plz}{' '}
                 <span className="font-jakarta text-[13px] font-normal text-[#57534E]">
                   · {plzResult.district}
@@ -117,7 +117,7 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
 
             <button
               onClick={() => onReservePlz(plzResult.plz)}
-              className="py-3 px-[18px] bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.14em] uppercase cursor-pointer whitespace-nowrap hover:bg-[#866941] transition-colors"
+              className="w-full sm:w-auto py-3 px-5 bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.12em] sm:tracking-[0.14em] uppercase cursor-pointer whitespace-nowrap min-h-[44px] flex items-center justify-center text-center hover:bg-[#866941] transition-colors shrink-0"
             >
               Reservieren →
             </button>
@@ -125,12 +125,12 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
         )}
 
         {/* 2-Column Grid: Active & Upcoming */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#E5E0D8] border border-[#E5E0D8] mt-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#E5E0D8] border border-[#E5E0D8] mt-10 sm:mt-14">
           
           {/* Active Tours */}
-          <div className="bg-[#FFFFFF] p-7">
+          <div className="bg-[#FFFFFF] p-5 sm:p-7">
             <div className="flex justify-between items-baseline gap-3 mb-4 pb-3.5 border-b border-[#E5E0D8]">
-              <span className="font-cormorant text-[22px] font-semibold text-[#18181B]">
+              <span className="font-cormorant text-[20px] sm:text-[22px] font-semibold text-[#18181B]">
                 Aktive Pilot-Touren
               </span>
               <span className="text-[10px] font-semibold tracking-[0.18em] text-[#9A7B4F] font-jakarta">
@@ -143,7 +143,7 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
                   key={c.plz}
                   type="button"
                   onClick={() => pickChip(c.plz)}
-                  className="flex gap-1.5 items-center py-1.5 px-2.5 bg-[#F9F8F6] border border-[#E5E0D8] rounded-none font-jakarta text-[12px] text-[#18181B] cursor-pointer hover:border-[#9A7B4F] transition-colors"
+                  className="flex gap-1.5 items-center py-2 px-3 bg-[#F9F8F6] border border-[#E5E0D8] rounded-none font-jakarta text-[12px] text-[#18181B] cursor-pointer hover:border-[#9A7B4F] transition-colors min-h-[38px]"
                 >
                   <strong className="font-semibold tabular-nums">{c.plz}</strong>
                   <span className="text-[#57534E]">{c.name}</span>
@@ -153,9 +153,9 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
           </div>
 
           {/* Upcoming Tours */}
-          <div className="bg-[#FFFFFF] p-7">
+          <div className="bg-[#FFFFFF] p-5 sm:p-7">
             <div className="flex justify-between items-baseline gap-3 mb-4 pb-3.5 border-b border-[#E5E0D8]">
-              <span className="font-cormorant text-[22px] font-semibold text-[#18181B]">
+              <span className="font-cormorant text-[20px] sm:text-[22px] font-semibold text-[#18181B]">
                 In Vorbereitung
               </span>
               <span className="text-[10px] font-semibold tracking-[0.18em] text-[#57534E] font-jakarta">
@@ -168,7 +168,7 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
                   key={c.plz}
                   type="button"
                   onClick={() => pickChip(c.plz)}
-                  className="flex gap-1.5 items-center py-1.5 px-2.5 bg-[#F9F8F6] border border-[#E5E0D8] rounded-none font-jakarta text-[12px] text-[#18181B] cursor-pointer hover:border-[#9A7B4F] transition-colors"
+                  className="flex gap-1.5 items-center py-2 px-3 bg-[#F9F8F6] border border-[#E5E0D8] rounded-none font-jakarta text-[12px] text-[#18181B] cursor-pointer hover:border-[#9A7B4F] transition-colors min-h-[38px]"
                 >
                   <strong className="font-semibold tabular-nums">{c.plz}</strong>
                   <span className="text-[#57534E]">{c.name}</span>

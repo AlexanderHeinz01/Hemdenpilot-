@@ -24,6 +24,8 @@ export interface LeadData {
   };
   city: 'Stuttgart';
   createdAt: string; // ISO
+  status?: 'neu' | 'kontaktiert' | 'in_route' | 'abgeschlossen';
+  notes?: string;
 }
 
 export interface PlzRouteInfo {

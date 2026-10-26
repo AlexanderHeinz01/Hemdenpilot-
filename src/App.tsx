@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { ProblemComparison } from './components/ProblemComparison';
@@ -7,15 +7,52 @@ import { Packages } from './components/Packages';
 import { PlzCheckerSection } from './components/PlzCheckerSection';
 import { FaqSection } from './components/FaqSection';
 import { FunnelModal } from './components/FunnelModal';
-import { AdminLeadDrawer } from './components/AdminLeadDrawer';
+import { LeadManagementModal } from './components/LeadManagementModal';
 import { Footer } from './components/Footer';
 import { PackageType, LeadData } from './types';
 
 export default function App() {
   const [isFunnelOpen, setIsFunnelOpen] = useState<boolean>(false);
+  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [selectedPackage, setSelectedPackage] = useState<PackageType>('A');
   const [prefillPlz, setPrefillPlz] = useState<string>('');
   const [lastUpdatedLeads, setLastUpdatedLeads] = useState<number>(Date.now());
+
+  // Listen for discreet URL triggers (?admin or #admin) and keyboard shortcuts (Ctrl+Shift+L)
+  useEffect(() => {
+    const checkUrlParams = () => {
+      const search = window.location.search.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (
+        search.includes('admin') ||
+        search.includes('pilot') ||
+        search.includes('leads') ||
+        hash.includes('admin') ||
+        hash.includes('leads')
+      ) {
+        setIsAdminOpen(true);
+      }
+    };
+
+    checkUrlParams();
+    window.addEventListener('popstate', checkUrlParams);
+    window.addEventListener('hashchange', checkUrlParams);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Shortcut: Ctrl + Shift + L or Cmd + Shift + L
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
+        e.preventDefault();
+        setIsAdminOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('popstate', checkUrlParams);
+      window.removeEventListener('hashchange', checkUrlParams);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const handleNavigate = (id: string, e?: React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -95,8 +132,8 @@ export default function App() {
         <FaqSection />
       </main>
 
-      {/* 8. Footer */}
-      <Footer />
+      {/* 8. Footer (mit diskretem Betreiber-Zugang über Copyright) */}
+      <Footer onOpenAdmin={() => setIsAdminOpen(true)} />
 
       {/* 3-Schritte-Konfigurator-Modal */}
       <FunnelModal
@@ -108,8 +145,12 @@ export default function App() {
         onLeadSubmitted={handleLeadSubmitted}
       />
 
-      {/* Diskreter Lead-Viewer / CSV-Export */}
-      <AdminLeadDrawer lastUpdated={lastUpdatedLeads} />
+      {/* Diskretes Lead Management Center für den Betreiber (kein sichtbarer Public-Button) */}
+      <LeadManagementModal
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+        lastUpdated={lastUpdatedLeads}
+      />
     </div>
   );
 }
