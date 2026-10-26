@@ -1,0 +1,6 @@
+{
+  "name": "Hemden-Autopilot",
+  "description": "Der wöchentliche Hemden-Wechselservice für Führungskräfte in Stuttgart. 5 frisch aufbereitete Business-Hemden schrankfertig getauscht.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

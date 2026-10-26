@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hemden-Autopilot | Dein wöchentlicher Wechselservice</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        navy: {
+                            800: '#0f172a',
+                            900: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-slate-800 bg-slate-50 selection:bg-brand-600 selection:text-white">
+
+    <!-- NAVIGATION -->
+    <header class="fixed top-0 left-0 right-0 z-40 glass-header border-b border-slate-200/80">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-xl font-extrabold tracking-tight text-navy-900">HEMDEN<span class="text-brand-600">AUTOPILOT</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Pilotstart München / Stuttgart
+                </span>
+                <a href="#pakete" class="text-sm font-semibold text-slate-700 hover:text-brand-600 transition">Pakete</a>
+                <a href="#pakete" class="bg-navy-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-lg hover:bg-slate-800 transition shadow-sm">Platz sichern</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="pt-32 pb-20 md:pt-40 md:pb-28 overflow-hidden">
+        <div class="max-w-5xl mx-auto px-4 text-center">
+            
+            <!-- Pilot Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs md:text-sm font-semibold bg-brand-50 text-brand-700 border border-brand-100 mb-8">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-600 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-600"></span>
+                </span>
+                Exklusiver Pilotstart: Nur 50 Plätze in ausgewählten PLZ-Gebieten
+            </div>
+
+            <!-- H1 -->
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-navy-900 leading-[1.15] mb-6">
+                Jeden Montagmorgen 5 perfekt gebügelte Hemden im Schrank.
+                <span class="block text-slate-500 font-bold text-3xl md:text-5xl mt-2">Ohne Waschen. Ohne Reinigung. Ohne Zeitverlust.</span>
+            </h1>
+
+            <!-- Subheadline -->
+            <p class="max-w-3xl mx-auto text-lg md:text-xl text-slate-600 mb-10 leading-relaxed">
+                Der erste vollautomatische Hemden-Autopilot für Führungskräfte, Berater und Partner. Wir tauschen jeden Sonntagabend kontaktlos an deiner Tür (oder montags am Büro-Empfang) 5 getragene gegen 5 frisch aufbereitete Business-Hemden.
+            </p>
+
+            <!-- CTA -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+                <a href="#pakete" class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-xl text-base font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-600/25 transition transform active:scale-[0.99]">
+                    Verfügbarkeit & Wunsch-Paket prüfen →
+                </a>
+            </div>
+
+            <!-- Trust Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left border-t border-slate-200/80 pt-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold">✓</div>
+                    <span class="text-sm font-medium text-slate-700">100 % kontaktloser Tausch (Kein Warten)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold">✓</div>
+                    <span class="text-sm font-medium text-slate-700">Hängend aufbereitet (Keine Legebrüche)</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-brand-50 flex items-center justify-center text-brand-600 font-bold">✓</div>
+                    <span class="text-sm font-medium text-slate-700">Monatlich flexibel pausierbar</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SECTION 2: PROBLEM & CONTRAST -->
+    <section class="py-20 bg-white border-y border-slate-200/80">
+        <div class="max-w-4xl mx-auto px-4">
+            <div class="text-center mb-14">
+                <h2 class="text-3xl font-extrabold text-navy-900 mb-4">Deine Zeit ist zu teuer für Öffnungszeiten und Paketstationen.</h2>
+                <p class="text-slate-600">Du trägst fünf Tage die Woche Weiß oder Hellblau. Deine bisherigen Optionen kosten dich Nerven:</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6 mb-12">
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="text-rose-500 font-bold text-sm uppercase tracking-wider block mb-2">Option 1</span>
+                    <h3 class="font-bold text-lg text-slate-900 mb-2">Selbst waschen & bügeln</h3>
+                    <p class="text-sm text-slate-600">Kostet jeden Sonntag wertvolle Freizeit. 8 Minuten pro Hemd summieren sich auf über 3 Stunden Lebenszeit pro Monat.</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="text-rose-500 font-bold text-sm uppercase tracking-wider block mb-2">Option 2</span>
+                    <h3 class="font-bold text-lg text-slate-900 mb-2">Die lokale Reinigung</h3>
+                    <p class="text-sm text-slate-600">Öffnungszeiten bis max. 18:30 Uhr, Parkplatzsuche, Zettelwirtschaft. Vergisst du es freitags, stehst du montags ohne Hemd da.</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200">
+                    <span class="text-rose-500 font-bold text-sm uppercase tracking-wider block mb-2">Option 3</span>
+                    <h3 class="font-bold text-lg text-slate-900 mb-2">Paket-Wäscheboxen</h3>
+                    <p class="text-sm text-slate-600">Kommen gefaltet im Pappkarton zurück – inklusive unschöner Knicke. Und den Karton schleppst du trotzdem zur Packstation.</p>
+                </div>
+            </div>
+
+            <div class="bg-brand-50 border border-brand-200 rounded-2xl p-6 text-center">
+                <p class="text-brand-900 font-bold text-lg">
+                    Unser Prinzip: Einmal einrichten, nie wieder daran denken. Kein Buchen von Einzelfahrten, keine Öffnungszeiten, keine Zettel.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: HOW IT WORKS -->
+    <section class="py-20 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-extrabold text-navy-900 mb-3">Auf Autopilot in 3 einfachen Schritten</h2>
+                <p class="text-slate-600">Maximale Bequemlichkeit ohne Anwesenheitspflicht.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm relative">
+                    <div class="w-10 h-10 rounded-xl bg-navy-900 text-white flex items-center justify-center font-bold mb-6">1</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-3">Setup wählen</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Du entscheidest, ob du deine eigenen Lieblingshemden rotieren lässt oder dir einen fabrikneuen Premium-Hemdensatz bereitstellen lässt.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm relative">
+                    <div class="w-10 h-10 rounded-xl bg-navy-900 text-white flex items-center justify-center font-bold mb-6">2</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-3">Kontaktloser Tausch</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Jeden Sonntagabend (oder montags am Empfang) tauscht unser Kurier deinen Kleidersack: 5 getragene weg, 5 schrankfertige hin.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm relative">
+                    <div class="w-10 h-10 rounded-xl bg-navy-900 text-white flex items-center justify-center font-bold mb-6">3</div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-3">Perfekt gekleidet</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Knöpfe werden bei Bedarf automatisch nachgenäht, Kragen schonend vorbehandelt. Du nimmst montags einfach das oberste Hemd.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 4: PACKAGES (A/B SPLIT) -->
+    <section id="pakete" class="py-24 bg-white border-t border-slate-200">
+        <div class="max-w-5xl mx-auto px-4">
+            <div class="text-center mb-16">
+                <span class="text-xs font-bold tracking-wider text-brand-600 uppercase mb-2 block">Modellauswahl für Pilotkunden</span>
+                <h2 class="text-3xl md:text-4xl font-extrabold text-navy-900 mb-4">Wähle dein bevorzugtes Modell</h2>
+                <p class="text-slate-600 max-w-xl mx-auto">Beide Modelle beinhalten den wöchentlichen Hol- und Bringservice sowie die schonende Profi-Pflege.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 items-stretch">
+                
+                <!-- PAKET B: EIGENE HEMDEN -->
+                <div class="flex flex-col p-8 rounded-3xl bg-slate-50 border border-slate-300 relative transition hover:shadow-lg">
+                    <div class="mb-6">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-800">Logistik & Pflege</span>
+                        <h3 class="text-2xl font-bold text-navy-900 mt-3 mb-1">Paket B: Der Logistik-Autopilot</h3>
+                        <p class="text-sm text-slate-600">Für alle, die ihre eigenen Markenhemden lieben, aber Bügeln und Fahrten hassen.</p>
+                    </div>
+
+                    <div class="mb-6 pb-6 border-b border-slate-200">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-4xl font-extrabold text-slate-900">89 €</span>
+                            <span class="text-slate-500 font-medium text-sm">/ Monat inkl. MwSt.</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Entspricht ca. 4,10 € pro Hemd inkl. 4x Kurierfahrt frei Haus</p>
+                    </div>
+
+                    <ul class="space-y-4 mb-8 text-sm text-slate-700 flex-grow">
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span><strong>Du nutzt 15 deiner eigenen Hemden</strong> im Rotations-Kreislauf</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span><strong>Jede Woche 5 Hemden</strong> perfekt hängend aufbereitet</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span><strong>Kostenloser Knopf-Nähservice</strong> inklusive</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span>Monatlich flexibel kündbar & pausierbar</span>
+                        </li>
+                    </ul>
+
+                    <button onclick="openModal('Paket B (Eigene Hemden)', 89)" class="w-full py-4 rounded-xl font-bold text-slate-900 bg-white border-2 border-slate-900 hover:bg-slate-900 hover:text-white transition">
+                        Paket B wählen →
+                    </button>
+                </div>
+
+                <!-- PAKET A: FULL SERVICE -->
+                <div class="flex flex-col p-8 rounded-3xl bg-navy-900 text-white relative shadow-xl border border-navy-800">
+                    <div class="absolute -top-3.5 right-6 bg-brand-600 text-white text-xs uppercase font-extrabold px-3 py-1 rounded-full tracking-wide">
+                        Sorglos-Flatrate
+                    </div>
+
+                    <div class="mb-6">
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-brand-100">All-Inclusive</span>
+                        <h3 class="text-2xl font-bold text-white mt-3 mb-1">Paket A: Die Full-Service-Flatrate</h3>
+                        <p class="text-sm text-slate-300">Nie wieder Hemden kaufen, waschen, bügeln oder entsorgen.</p>
+                    </div>
+
+                    <div class="mb-6 pb-6 border-b border-slate-800">
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-4xl font-extrabold text-white">139 €</span>
+                            <span class="text-slate-400 font-medium text-sm">/ Monat inkl. MwSt.</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Inklusive Anschaffung, 100% Baumwolle, Verschleiß-Ersatz</p>
+                    </div>
+
+                    <ul class="space-y-4 mb-8 text-sm text-slate-200 flex-grow">
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span><strong>15 neue Premium-Markenhemden</strong> exklusiv für dich reserviert</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span><strong>Kein Fremd-Pool:</strong> Deine Hemden sind fest auf dich codiert</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span><strong>Verschleiß-Garantie:</strong> Ausgefranste Hemden werden automatisch ersetzt</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-brand-600 font-bold">✓</span>
+                            <span>Wöchentlich 5 frische Hemden an der Tür / am Empfang</span>
+                        </li>
+                    </ul>
+
+                    <button onclick="openModal('Paket A (Inkl. Hemden)', 139)" class="w-full py-4 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 transition shadow-lg shadow-brand-600/30">
+                        Paket A wählen →
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: FAQ -->
+    <section class="py-20 bg-slate-50 border-t border-slate-200">
+        <div class="max-w-3xl mx-auto px-4">
+            <h2 class="text-2xl md:text-3xl font-extrabold text-navy-900 text-center mb-10">Häufig gestellte Fragen</h2>
+            
+            <div class="space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2">Trage ich bei Paket A Hemden, die vorher ein Fremder anhatte?</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Nein, definitiv nicht. Zum Start deines Abos weisen wir dir 15 fabrikneue Markenhemden in deiner exakten Passform fest zu (digital per Barcode im Etikett erfasst). Du trägst ausschließlich deine persönliche Rotation.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2">Wie funktioniert die Übergabe, wenn ich nicht zu Hause bin?</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Du erhältst von uns zwei hochwertige, wetterfeste Kleidersäcke mit Sicherheitshaken für deine Wohnungstür. Alternativ vereinbaren wir einen geschützten Ablageort oder die kontaktlose Abgabe am Empfang deines Büros / deiner Kanzlei.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2">Was passiert bei Urlaub oder Geschäftsreisen?</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Bis Freitag, 12:00 Uhr, kannst du die Folgewoche per Klick im Account oder kurzer WhatsApp-Nachricht pausieren. Ausgelassene Wochen werden dir gutgeschrieben.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200">
+                    <h3 class="font-bold text-slate-900 mb-2">Was ist, wenn ein eigenes Hemd beschädigt wird?</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Jedes eingehende Hemd wird dokumentiert und ist während des gesamten Prozesses bis zu einem Wert von 150 € pro Hemd versichert.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-10 bg-white border-t border-slate-200 text-center text-xs text-slate-500">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>© 2025 Hemden-Autopilot. Alle Rechte vorbehalten.</div>
+            <div class="flex gap-6">
+                <a href="#" class="hover:underline">Impressum</a>
+                <a href="#" class="hover:underline">Datenschutz</a>
+                <a href="#" class="hover:underline">AGB</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE 3-STEP MICRO-FUNNEL MODAL -->
+    <div id="funnel-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-900/70 backdrop-blur-sm hidden">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden transform transition-all">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                    <span id="modal-step-tag" class="text-xs font-bold text-brand-600 uppercase tracking-wide">Schritt 2 von 3</span>
+                    <h4 id="modal-title" class="font-bold text-slate-900 text-base">Präferenzen festlegen</h4>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-700 text-xl font-bold p-1">✕</button>
+            </div>
+
+            <!-- MODAL CONTENT: STEP 2 (Preferences) -->
+            <div id="step-2-content" class="p-6">
+                <div class="mb-4">
+                    <p class="text-xs text-slate-500 mb-1">Gewähltes Paket:</p>
+                    <div id="summary-package" class="font-bold text-slate-900 text-sm bg-brand-50 p-2.5 rounded-lg border border-brand-100">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Deine Hemdengröße / Schnitt</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="shirt-size" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 bg-white">
+                                <option value="Kragen 38 / Small">Kragen 38 (S)</option>
+                                <option value="Kragen 39/40 / Medium" selected>Kragen 39/40 (M)</option>
+                                <option value="Kragen 41/42 / Large">Kragen 41/42 (L)</option>
+                                <option value="Kragen 43/44 / XL">Kragen 43/44 (XL)</option>
+                            </select>
+                            <select id="shirt-fit" class="w-full text-sm p-2.5 rounded-lg border border-slate-300 bg-white">
+                                <option value="Slim Fit">Slim Fit</option>
+                                <option value="Modern / Tailored Fit" selected>Modern Fit</option>
+                                <option value="Regular Fit">Regular Fit</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Idealer Übergabeort für den Tausch</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+                                <input type="radio" name="dropoff" value="Privatadresse (Sonntagabend)" checked class="text-brand-600">
+                                <div class="text-xs">
+                                    <span class="font-bold block text-slate-800">Privatadresse</span>
+                                    <span class="text-slate-500">Sonntagabend kontaktlos an der Wohnungstür</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+                                <input type="radio" name="dropoff" value="Büro / Kanzlei-Empfang (Montagmorgen)" class="text-brand-600">
+                                <div class="text-xs">
+                                    <span class="font-bold block text-slate-800">Büro / Kanzlei-Empfang</span>
+                                    <span class="text-slate-500">Montagmorgen pünktlich vor 09:00 Uhr</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="goToStep3()" class="mt-6 w-full py-3.5 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 transition">
+                    Weiter zu Schritt 3 →
+                </button>
+            </div>
+
+            <!-- MODAL CONTENT: STEP 3 (Lead Capture / Smoke Door) -->
+            <div id="step-3-content" class="p-6 hidden">
+                <div class="mb-4 text-center">
+                    <span class="inline-block p-2 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold mb-2">Fast geschafft!</span>
+                    <h5 class="text-base font-bold text-slate-900">Route für dein Viertel prüfen</h5>
+                    <p class="text-xs text-slate-600 mt-1">Wir schalten Routen ab 15 Reservierungen pro PLZ frei. Reserviere unverbindlich deinen Platz inklusive <strong>50 % Rabatt im Probemonat</strong>.</p>
+                </div>
+
+                <form id="lead-form" onsubmit="submitForm(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Deine Postleitzahl</label>
+                        <input type="text" id="lead-plz" required placeholder="z. B. 70173 oder 80331" maxlength="5" class="w-full text-sm p-2.5 rounded-lg border border-slate-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Geschäftliche E-Mail-Adresse</label>
+                        <input type="email" id="lead-email" required placeholder="name@kanzlei-beispiel.de" class="w-full text-sm p-2.5 rounded-lg border border-slate-300">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Telefonnummer (optional für Routen-Rückfragen)</label>
+                        <input type="tel" id="lead-phone" placeholder="+49 170 1234567" class="w-full text-sm p-2.5 rounded-lg border border-slate-300">
+                    </div>
+
+                    <p class="text-[10px] text-slate-400">Keine Zahlungsdaten nötig. Du wirst informiert, sobald die Lieferroute in deiner PLZ aktiv wird.</p>
+
+                    <button type="submit" id="submit-btn" class="w-full py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition">
+                        Pilotplatz unverbindlich sichern →
+                    </button>
+                </form>
+            </div>
+
+            <!-- MODAL SUCCESS SCREEN -->
+            <div id="step-success" class="p-8 text-center hidden">
+                <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">✓</div>
+                <h4 class="text-xl font-bold text-slate-900 mb-2">Vormerkung erfolgreich!</h4>
+                <p class="text-sm text-slate-600 mb-6">Wir haben deine Reservierung für PLZ <span id="success-plz" class="font-bold"></span> registriert. Eine Bestätigung ist per E-Mail an dich unterwegs.</p>
+                <button onclick="closeModal()" class="w-full py-3 rounded-xl font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 transition">Fenster schließen</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FUNNEL LOGIC & EVENT TRACKING SCRIPT -->
+    <script>
+        // State
+        let funnelData = {
+            package: '',
+            price: 0,
+            size: '',
+            fit: '',
+            dropoff: '',
+            plz: '',
+            email: '',
+            phone: ''
+        };
+
+        // Open Modal (Triggered by Step 1 Package click)
+        function openModal(packageName, price) {
+            funnelData.package = packageName;
+            funnelData.price = price;
+
+            // TRACKING EVENT: Step 1 Package chosen
+            trackEvent('select_package', {
+                package_name: packageName,
+                price: price
+            });
+
+            // UI Setup
+            document.getElementById('summary-package').innerText = packageName + ' – ' + price + ' € / Monat';
+            document.getElementById('modal-step-tag').innerText = 'Schritt 2 von 3';
+            document.getElementById('modal-title').innerText = 'Präferenzen festlegen';
+
+            document.getElementById('step-2-content').classList.remove('hidden');
+            document.getElementById('step-3-content').classList.add('hidden');
+            document.getElementById('step-success').classList.add('hidden');
+            document.getElementById('funnel-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('funnel-modal').classList.add('hidden');
+        }
+
+        // Advance to Step 3
+        function goToStep3() {
+            funnelData.size = document.getElementById('shirt-size').value;
+            funnelData.fit = document.getElementById('shirt-fit').value;
+            const dropoffEl = document.querySelector('input[name="dropoff"]:checked');
+            funnelData.dropoff = dropoffEl ? dropoffEl.value : 'Unbekannt';
+
+            // TRACKING EVENT: Step 2 completed
+            trackEvent('funnel_step_2_completed', {
+                size: funnelData.size,
+                fit: funnelData.fit,
+                dropoff: funnelData.dropoff
+            });
+
+            // Switch Screen
+            document.getElementById('modal-step-tag').innerText = 'Schritt 3 von 3';
+            document.getElementById('modal-title').innerText = 'Route freischalten';
+            document.getElementById('step-2-content').classList.add('hidden');
+            document.getElementById('step-3-content').classList.remove('hidden');
+        }
+
+        // Final Submit (Step 3 Smoke Door)
+        function submitForm(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById('submit-btn');
+            btn.innerText = 'Wird verarbeitet...';
+            btn.disabled = true;
+
+            funnelData.plz = document.getElementById('lead-plz').value;
+            funnelData.email = document.getElementById('lead-email').value;
+            funnelData.phone = document.getElementById('lead-phone').value;
+
+            // TRACKING EVENT: Complete Funnel conversion
+            trackEvent('lead_reserved', funnelData);
+
+            // Log result in browser console (Inspect -> Console)
+            console.log('✅ NEUER LEAD ERFASST (Payload für Webhook):', funnelData);
+
+            /* HINWEIS: Hier kannst du deinen Webhook / Zapier / Formspree Endpoint eintragen:
+               fetch('https://formspree.io/f/DEINE_ID', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify(funnelData)
+               });
+            */
+
+            setTimeout(() => {
+                document.getElementById('success-plz').innerText = funnelData.plz;
+                document.getElementById('step-3-content').classList.add('hidden');
+                document.getElementById('step-success').classList.remove('hidden');
+                btn.innerText = 'Pilotplatz unverbindlich sichern →';
+                btn.disabled = false;
+            }, 600);
+        }
+
+        // Central Analytics Dispatcher (Google Analytics / Meta Pixel)
+        function trackEvent(eventName, payload) {
+            console.log(`📡 [Tracking] Event: ${eventName}`, payload);
+            
+            // Falls Google Analytics (gtag) installiert ist:
+            if (typeof gtag === 'function') {
+                gtag('event', eventName, payload);
+            }
+            // Falls Meta Pixel (fbq) installiert ist:
+            if (typeof fbq === 'function') {
+                fbq('trackCustom', eventName, payload);
+            }
+        }
+    </script>
+</body>
+</html>
