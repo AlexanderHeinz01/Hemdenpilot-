@@ -53,6 +53,13 @@ export const Header: React.FC<HeaderProps> = ({
             Modelle &amp; Preise
           </a>
           <a
+            href="#team"
+            onClick={(e) => onNavigate('team', e)}
+            className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
+          >
+            Team
+          </a>
+          <a
             href="#faq"
             onClick={(e) => onNavigate('faq', e)}
             className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"

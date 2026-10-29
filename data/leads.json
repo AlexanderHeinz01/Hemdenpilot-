@@ -1,0 +1,126 @@
+[
+  {
+    "id": "HP-70173-CONFIRM",
+    "package": "A",
+    "packageName": "Paket A – Die Full-Service-Flatrate",
+    "pricePerMonth": 119,
+    "firstMonthPrice": 59.5,
+    "contact": {
+      "name": "Alexander Heinz Test",
+      "email": "info@alexander-heinz.de",
+      "phone": "0175-36 23807",
+      "plz": "70173"
+    },
+    "preferences": {
+      "collarSize": "41",
+      "fit": "Modern / Tailored Fit",
+      "colorMix": "3x Weiß / 2x Hellblau",
+      "brand": "Eton"
+    },
+    "handover": {
+      "type": "B2C",
+      "location": "Privatadresse an der Wohnungstür",
+      "slot": "Sonntag 18:00–21:00"
+    },
+    "createdAt": "2026-10-27T14:32:00Z"
+  },
+  {
+    "id": "HP-70173-TEST",
+    "package": "A",
+    "packageName": "Paket A – Die Full-Service-Flatrate",
+    "pricePerMonth": 119,
+    "firstMonthPrice": 59.5,
+    "contact": {
+      "name": "Dr. Max Mustermann",
+      "email": "max@mustermann.de",
+      "phone": "+49 175 3623807",
+      "plz": "70173"
+    },
+    "preferences": {
+      "collarSize": "41",
+      "fit": "Slim Fit",
+      "colorMix": "3x Weiß / 2x Hellblau",
+      "brand": "Eton"
+    },
+    "handover": {
+      "type": "B2B",
+      "location": "Kanzlei-Empfang Königstraße",
+      "slot": "Montag bis 09:00",
+      "colleaguesInterested": true
+    },
+    "createdAt": "2026-10-27T14:27:00Z"
+  },
+  {
+    "id": "HP-TEST-1",
+    "package": "A",
+    "packageName": "Paket A",
+    "pricePerMonth": 119,
+    "firstMonthPrice": 59.5,
+    "contact": {
+      "name": "Test",
+      "email": "test@example.com",
+      "plz": "70173"
+    },
+    "preferences": {},
+    "handover": {
+      "location": "Test"
+    },
+    "createdAt": "2026-10-27T14:00:00Z"
+  },
+  {
+    "id": "HP-70174-7969",
+    "event": "lead_reserved",
+    "package": "B",
+    "packageName": "Paket B – Der Logistik-Autopilot",
+    "pricePerMonth": 79,
+    "firstMonthPrice": 39.5,
+    "preferences": {
+      "collarSize": "Eigene Hemden (Keine Angabe nötig)",
+      "fit": "Eigene Hemden",
+      "colorMix": null,
+      "brand": "Eigene Hemden (Keine Angabe)"
+    },
+    "handover": {
+      "type": "B2C",
+      "location": "Privatadresse an der Wohnungstür",
+      "slot": "Sonntag 18:00–21:00"
+    },
+    "contact": {
+      "plz": "70174",
+      "name": "Andre",
+      "email": "alexander84.heinz@googlemail.com",
+      "phone": "+491753623807"
+    },
+    "city": "Stuttgart",
+    "createdAt": "2026-10-27T14:23:30.953Z",
+    "status": "neu"
+  },
+  {
+    "id": "HP-20114-3692",
+    "event": "lead_reserved",
+    "package": "B",
+    "packageName": "Paket B – Der Logistik-Autopilot",
+    "pricePerMonth": 79,
+    "firstMonthPrice": 39.5,
+    "preferences": {
+      "collarSize": "Eigene Hemden (Keine Angabe nötig)",
+      "fit": "Eigene Hemden",
+      "colorMix": null,
+      "brand": "Eigene Hemden (Keine Angabe)"
+    },
+    "handover": {
+      "type": "B2C",
+      "location": "Privatadresse an der Wohnungstür",
+      "slot": "Sonntag 18:00–21:00"
+    },
+    "contact": {
+      "plz": "20114",
+      "name": "Andre",
+      "email": "alexander84.heinz@googlemail.com",
+      "phone": "+491753623807"
+    },
+    "city": "Stuttgart",
+    "createdAt": "2026-10-27T14:18:39.667Z",
+    "status": "neu"
+  }
+]

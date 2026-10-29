@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check } from 'lucide-react';
 import { PackageType, LeadData } from '../types';
+import { dispatchLead } from '../services/leadService';
 
 interface FunnelModalProps {
   isOpen: boolean;
@@ -106,10 +107,10 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
       pricePerMonth: isA ? 119 : 79,
       firstMonthPrice: isA ? 59.5 : 39.5,
       preferences: {
-        collarSize: size,
-        fit,
+        collarSize: isA ? size : 'Eigene Hemden (Keine Angabe nötig)',
+        fit: isA ? fit : 'Eigene Hemden',
         colorMix: isA ? mix : null,
-        brand: customBrand.trim() || brand,
+        brand: isA ? (customBrand.trim() || brand) : (customBrand.trim() || 'Eigene Hemden (Keine Angabe)'),
       },
       handover:
         dropoff === 'home'
@@ -135,25 +136,8 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
       status: 'neu',
     };
 
-    setTimeout(() => {
-      try {
-        const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([lead, ...existing]));
-
-        // Optional Webhook notification (if configured by operator)
-        const webhookUrl = localStorage.getItem('hemdenpilot_webhook_url');
-        if (webhookUrl && webhookUrl.startsWith('http')) {
-          fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(lead),
-            mode: 'no-cors',
-          }).catch((e) => console.log('Webhook dispatch silent notice:', e));
-        }
-      } catch (err) {
-        console.error(err);
-      }
-
+    // Forward lead directly to info@alexander-heinz.de, trigger webhooks, and save locally
+    dispatchLead(lead).finally(() => {
       console.log('NEUER LEAD ERFASST (Event: lead_reserved):', lead);
       if (typeof window !== 'undefined' && (window as any).gtag) {
         (window as any).gtag('event', 'lead_reserved', lead);
@@ -163,7 +147,7 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
       setConfirmedLead(lead);
       setIsSubmitting(false);
       setStep(4);
-    }, 500);
+    });
   };
 
   const sizes = ['38', '39', '40', '41', '42', '43', '44+'];
@@ -232,116 +216,149 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
           </div>
         </div>
 
-        {/* STEP 1: Passform & Marken-Präferenz */}
+        {/* STEP 1: Passform & Marken-Präferenz (Bedingte Logik nach Paket A / B) */}
         {step === 1 && (
           <div className="flex flex-col gap-6 sm:gap-7">
             <h3 className="font-cormorant font-medium text-[26px] sm:text-[30px] leading-[1.15] m-0">
-              Ihre Passform &amp; <em className="italic">Marken-Präferenz</em>
+              {isA ? (
+                <>
+                  Ihre Passform &amp; <em className="italic">Marken-Präferenz</em>
+                </>
+              ) : (
+                <>
+                  Ihre Hemden in der <em className="italic">Pflege-Rotation</em>
+                </>
+              )}
             </h3>
 
-            {/* Kragenweite */}
-            <div>
-              <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
-                Kragenweite
-              </div>
-              <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-                {sizes.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setSize(s)}
-                    className={`py-3 text-center text-[14px] font-medium border rounded-none font-jakarta cursor-pointer tabular-nums transition-colors ${
-                      size === s
-                        ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
-                        : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Bevorzugter Schnitt */}
-            <div>
-              <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
-                Bevorzugter Schnitt
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                {fits.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setFit(f)}
-                    className={`py-3 px-2 text-center text-[13px] font-medium border rounded-none font-jakarta cursor-pointer transition-colors ${
-                      fit === f
-                        ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
-                        : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Farb-Mix (Nur bei Paket A) */}
-            {isA && (
-              <div>
-                <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
-                  Farb-Mix der 5 Wochenhemden
+            {isA ? (
+              <>
+                {/* Kragenweite (Nur Paket A) */}
+                <div>
+                  <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
+                    Kragenweite
+                  </div>
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                    {sizes.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSize(s)}
+                        className={`py-3 text-center text-[14px] font-medium border rounded-none font-jakarta cursor-pointer tabular-nums transition-colors ${
+                          size === s
+                            ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
+                            : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                  {mixes.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setMix(m)}
-                      className={`py-3 px-2 text-center text-[13px] font-medium border rounded-none font-jakarta cursor-pointer transition-colors ${
-                        mix === m
-                          ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
-                          : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
+
+                {/* Bevorzugter Schnitt (Nur Paket A) */}
+                <div>
+                  <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
+                    Bevorzugter Schnitt
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                    {fits.map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setFit(f)}
+                        className={`py-3 px-2 text-center text-[13px] font-medium border rounded-none font-jakarta cursor-pointer transition-colors ${
+                          fit === f
+                            ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
+                            : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+
+                {/* Farb-Mix der 5 Wochenhemden (Nur Paket A) */}
+                <div>
+                  <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
+                    Farb-Mix der 5 Wochenhemden
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                    {mixes.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setMix(m)}
+                        className={`py-3 px-2 text-center text-[13px] font-medium border rounded-none font-jakarta cursor-pointer transition-colors ${
+                          mix === m
+                            ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
+                            : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
+                        }`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Welche Hemdenmarke tragen Sie aktuell am liebsten? (Paket A) */}
+                <div>
+                  <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
+                    Welche Hemdenmarke tragen Sie aktuell am liebsten?
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-2.5">
+                    {brands.map((b) => (
+                      <button
+                        key={b}
+                        type="button"
+                        onClick={() => {
+                          setBrand(b);
+                          setCustomBrand('');
+                        }}
+                        className={`py-2 px-3.5 border rounded-none font-jakarta text-[12px] font-medium cursor-pointer transition-colors ${
+                          brand === b && !customBrand
+                            ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
+                            : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
+                        }`}
+                      >
+                        {b}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Andere Marke (optional)"
+                    value={customBrand}
+                    onChange={handleCustomBrandChange}
+                    className="w-full p-3.5 bg-[#FFFFFF] border border-[#E5E0D8] rounded-none font-jakarta text-[14px] text-[#18181B] outline-none focus:border-[#9A7B4F]"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Paket B: Erklärender Satz statt Größen/Schnitt/Farb-Mix */}
+                <div className="p-4 sm:p-5 bg-[#F2EFE9] border border-[#E5E0D8] text-[13px] sm:text-[14px] leading-[1.65] text-[#57534E] font-jakarta">
+                  Da Sie Ihre eigenen Hemden in die Rotation geben, benötigen wir keine Größenangaben.
+                </div>
+
+                {/* Paket B: Umbenanntes reines Textfeld für Marken */}
+                <div>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-[#57534E] leading-relaxed">
+                      Welche Hemdenmarken geben Sie voraussichtlich in unsere Pflege? (Optional, hilft uns bei der Wahl des Schonwaschgangs)
+                    </span>
+                    <input
+                      type="text"
+                      placeholder="z. B. Eton, Olymp, Van Laack, Barba Napoli, Maßhemden …"
+                      value={customBrand}
+                      onChange={handleCustomBrandChange}
+                      className="w-full p-3.5 bg-[#FFFFFF] border border-[#E5E0D8] rounded-none font-jakarta text-[14px] text-[#18181B] outline-none focus:border-[#9A7B4F]"
+                    />
+                  </label>
+                </div>
+              </>
             )}
-
-            {/* Welche Hemdenmarke tragen Sie aktuell am liebsten? */}
-            <div>
-              <div className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#57534E] mb-2.5">
-                Welche Hemdenmarke tragen Sie aktuell am liebsten?
-              </div>
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                {brands.map((b) => (
-                  <button
-                    key={b}
-                    type="button"
-                    onClick={() => {
-                      setBrand(b);
-                      setCustomBrand('');
-                    }}
-                    className={`py-2 px-3.5 border rounded-none font-jakarta text-[12px] font-medium cursor-pointer transition-colors ${
-                      brand === b && !customBrand
-                        ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
-                        : 'bg-[#FFFFFF] text-[#18181B] border-[#E5E0D8] hover:border-[#9A7B4F]'
-                    }`}
-                  >
-                    {b}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                placeholder="Andere Marke (optional)"
-                value={customBrand}
-                onChange={handleCustomBrandChange}
-                className="w-full p-3.5 bg-[#FFFFFF] border border-[#E5E0D8] rounded-none font-jakarta text-[14px] text-[#18181B] outline-none focus:border-[#9A7B4F]"
-              />
-            </div>
 
             <button
               type="button"
@@ -584,14 +601,23 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
               {[
                 { k: 'Reservierungs-ID', v: confirmedLead.id },
                 { k: 'Modell', v: confirmedLead.packageName },
-                {
-                  k: 'Kragenweite & Schnitt',
-                  v: `${confirmedLead.preferences.collarSize} · ${confirmedLead.preferences.fit}`,
-                },
-                ...(confirmedLead.preferences.colorMix
-                  ? [{ k: 'Farb-Mix', v: confirmedLead.preferences.colorMix }]
-                  : []),
-                { k: 'Lieblingsmarke', v: confirmedLead.preferences.brand },
+                ...(confirmedLead.package === 'A'
+                  ? [
+                      {
+                        k: 'Kragenweite & Schnitt',
+                        v: `${confirmedLead.preferences.collarSize} · ${confirmedLead.preferences.fit}`,
+                      },
+                      ...(confirmedLead.preferences.colorMix
+                        ? [{ k: 'Farb-Mix', v: confirmedLead.preferences.colorMix }]
+                        : []),
+                      { k: 'Lieblingsmarke', v: confirmedLead.preferences.brand },
+                    ]
+                  : [
+                      { k: 'Hemden', v: 'Eigene Hemden (Rotation)' },
+                      ...(confirmedLead.preferences.brand && !confirmedLead.preferences.brand.includes('Keine Angabe')
+                        ? [{ k: 'Hemdenmarken', v: confirmedLead.preferences.brand }]
+                        : []),
+                    ]),
                 {
                   k: 'Übergabeort',
                   v: `${confirmedLead.handover.location} (${confirmedLead.handover.slot})`,

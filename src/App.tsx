@@ -4,6 +4,7 @@ import { Hero } from './components/Hero';
 import { ProblemComparison } from './components/ProblemComparison';
 import { HowItWorks } from './components/HowItWorks';
 import { Packages } from './components/Packages';
+import { TeamSection } from './components/TeamSection';
 import { PlzCheckerSection } from './components/PlzCheckerSection';
 import { FaqSection } from './components/FaqSection';
 import { FunnelModal } from './components/FunnelModal';
@@ -124,6 +125,9 @@ export default function App() {
 
         {/* 5. Pakete (A/B-Auswahl) */}
         <Packages onSelectPackage={handleSelectPackage} />
+
+        {/* 5b. Sektion 4b: Das Gründer- & Advisory-Team */}
+        <TeamSection />
 
         {/* 6. PLZ-Check */}
         <PlzCheckerSection onReservePlz={handleReservePlz} />

@@ -19,6 +19,12 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { LeadData, PackageType } from '../types';
+import {
+  dispatchLead,
+  RECIPIENT_EMAIL,
+  fetchCentralLeads,
+  checkResendStatus,
+} from '../services/leadService';
 
 interface LeadManagementModalProps {
   isOpen: boolean;
@@ -43,15 +49,17 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
   const [webhookSaved, setWebhookSaved] = useState<boolean>(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
+  const [resendStatus, setResendStatus] = useState<{ configured: boolean; recipient: string }>({
+    configured: false,
+    recipient: 'info@alexander-heinz.de',
+  });
 
-  // Load leads and webhook config
-  const loadLeads = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      setLeads(stored);
-    } catch {
-      setLeads([]);
-    }
+  // Load leads from central server & local storage, check Resend status
+  const loadLeads = async () => {
+    const list = await fetchCentralLeads();
+    setLeads(list);
+    const status = await checkResendStatus();
+    setResendStatus(status);
   };
 
   useEffect(() => {
@@ -89,6 +97,17 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
     localStorage.setItem(WEBHOOK_KEY, webhookUrl.trim());
     setWebhookSaved(true);
     setTimeout(() => setWebhookSaved(false), 2500);
+  };
+
+  const handleForwardLeadByEmail = async (leadToForward: LeadData) => {
+    setCopyFeedback(`Lead ${leadToForward.id} wird an ${RECIPIENT_EMAIL} übermittelt...`);
+    const res = await dispatchLead(leadToForward);
+    if (res.emailSent) {
+      setCopyFeedback(`✓ Lead ${leadToForward.id} erfolgreich per E-Mail an ${RECIPIENT_EMAIL} übermittelt!`);
+    } else {
+      setCopyFeedback(`E-Mail-Dispatch an ${RECIPIENT_EMAIL} ausgelöst.`);
+    }
+    setTimeout(() => setCopyFeedback(null), 4000);
   };
 
   const handleTestWebhook = async () => {
@@ -407,9 +426,18 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
                 <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase px-2 py-0.5 bg-[#9A7B4F]/20 text-[#D9C3A0] border border-[#9A7B4F]/40">
                   Lead Management Center (Stuttgart)
                 </span>
+                {resendStatus.configured ? (
+                  <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
+                    Resend E-Mail Aktiv ({resendStatus.recipient})
+                  </span>
+                ) : (
+                  <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-amber-950/60 text-amber-300 border border-amber-500/40">
+                    Resend API-Key bereitstellen
+                  </span>
+                )}
               </div>
               <p className="text-[10px] sm:text-[11px] text-[#A8A29E] m-0">
-                Diskrete Lead-Verwaltung · Daten werden lokal im Browser &amp; optional per Webhook synchronisiert
+                Zentrale Speicherung &amp; automatische Resend E-Mail-Weiterleitung an {resendStatus.recipient}
               </p>
             </div>
           </div>
@@ -532,6 +560,46 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
             >
               <Download className="w-3.5 h-3.5 text-[#9A7B4F]" />
               <span>CSV Export (Excel)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                const sample: LeadData = leads[0] || {
+                  id: `HP-TEST-${Math.floor(1000 + Math.random() * 9000)}`,
+                  event: 'lead_reserved',
+                  package: 'A',
+                  packageName: 'Paket A – Die Executive-Rotation',
+                  pricePerMonth: 119,
+                  firstMonthPrice: 59.5,
+                  status: 'neu',
+                  preferences: {
+                    collarSize: '41',
+                    fit: 'Slim Fit',
+                    colorMix: '3x Weiß / 2x Hellblau',
+                    brand: 'Eton',
+                  },
+                  handover: {
+                    type: 'B2B',
+                    location: 'Kanzlei-Empfang Stuttgart',
+                    slot: 'Montag bis 09:00',
+                    colleaguesInterested: true,
+                  },
+                  contact: {
+                    plz: '70173',
+                    name: 'Test-Interessent',
+                    email: 'alexander84.heinz@gmail.com',
+                    phone: '+49 175 3623807',
+                  },
+                  city: 'Stuttgart',
+                  createdAt: new Date().toISOString(),
+                };
+                handleForwardLeadByEmail(sample);
+              }}
+              className="px-3 py-1.5 bg-[#F9F8F6] hover:bg-[#F2EFE9] border border-[#9A7B4F]/50 text-[11px] font-semibold tracking-[0.08em] uppercase text-[#18181B] flex items-center gap-1.5 cursor-pointer transition"
+              title="Sendet Test-Lead an info@alexander-heinz.de"
+            >
+              <Mail className="w-3.5 h-3.5 text-[#9A7B4F]" />
+              <span>Test-Mail an info@alexander-heinz.de</span>
             </button>
 
             {leads.length === 0 && (
@@ -888,6 +956,14 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
 
               {/* Bottom Quick Contact Action */}
               <div className="pt-4 border-t border-[#E5E0D8] flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleForwardLeadByEmail(selectedLead)}
+                  className="w-full py-2.5 bg-[#0B111E] text-[#F9F8F6] text-center text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#18181B] transition cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5 text-[#9A7B4F]" />
+                  <span>An {RECIPIENT_EMAIL} senden</span>
+                </button>
                 <a
                   href={`mailto:${selectedLead.contact?.email}?subject=Ihr%20Hemdenpilot-Start%20in%20Stuttgart%20(${selectedLead.id})`}
                   className="w-full py-2.5 bg-[#9A7B4F] text-[#0B111E] text-center text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#866941] transition"
