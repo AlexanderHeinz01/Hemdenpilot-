@@ -44,7 +44,7 @@ export const HowItWorks: React.FC = () => {
               Kontaktloser Tausch am Fixtag
             </h3>
             <p className="m-0 text-[15px] leading-[1.7] text-[#57534E] text-pretty font-jakarta">
-              Jeden Sonntagabend (an Ihrer Wohnungstür im blickdichten Canvas-Kleidersack) oder Montagmorgen (am Empfang Ihres Büros) tauschen wir 5 getragene gegen 5 frisch gebügelte Hemden.
+              Zu Ihrem festen Termin – an der Wohnungstür im blickdichten Canvas-Kleidersack, beim Concierge oder montags am Empfang Ihres Büros – tauschen wir 5 getragene gegen 5 frisch gebügelte Hemden.
             </p>
           </div>
 

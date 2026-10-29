@@ -1,16 +1,26 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { PackageType } from '../types';
+import { formatEuro, getPricing } from '../config/pricing';
+import { getPriceVariant } from '../services/session';
 
 interface PackagesProps {
   onSelectPackage: (pkg: PackageType) => void;
 }
 
 export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
+  const variant = getPriceVariant();
+  const pricingA = getPricing(variant, 'A');
+  const pricingB = getPricing(variant, 'B');
+
   const featuresB = [
     {
+      t: 'Voraussetzung:',
+      d: 'Rund 15 eigene Business-Hemden – 5 im Einsatz, 5 in der Pflege, 5 als Reserve in Ihrem Schrank.',
+    },
+    {
       t: 'Wöchentlicher 5er-Tausch:',
-      d: 'Jeden Sonntag/Montag 5 frisch gebügelte Hemden hängend geliefert, 5 getragene abgeholt (20 Reinigungen/Monat).',
+      d: 'Zu Ihrem festen Wochentermin 5 frisch gebügelte Hemden hängend geliefert, 5 getragene abgeholt (20 Reinigungen/Monat).',
     },
     {
       t: 'Ihre eigenen Hemden:',
@@ -37,7 +47,7 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
     },
     {
       t: 'Wöchentlicher 5er-Tausch:',
-      d: 'Jeden Sonntag/Montag 5 frisch aufbereitete Hemden geliefert, 5 getragene abgeholt.',
+      d: 'Zu Ihrem festen Wochentermin 5 frisch aufbereitete Hemden geliefert, 5 getragene abgeholt.',
     },
     {
       t: 'Verschleiß-Flatrate inklusive:',
@@ -62,7 +72,7 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
             Wählen Sie Ihr bevorzugtes <em className="italic">Rotations-Modell</em>
           </h2>
           <p className="m-0 text-[16px] leading-[1.7] text-[#57534E] text-pretty font-jakarta">
-            Beide Modelle beinhalten sämtliche wöchentlichen Kurierfahrten in Stuttgart sowie unsere Knopf- und Kragenpflege. Keine Mindestvertragslaufzeit.
+            Beide Modelle beinhalten sämtliche wöchentlichen Kurierfahrten in Stuttgart sowie unsere Knopf- und Kragenpflege. Beide sind monatlich kündbar; bei Paket A fällt für Ihre 15 persönlichen Hemden einmalig eine Erstausstattung an.
           </p>
         </div>
 
@@ -70,7 +80,10 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
           
           {/* Paket B */}
-          <div className="bg-[#FFFFFF] border border-[#E5E0D8] p-6 sm:p-8 md:p-12 flex flex-col justify-between">
+          <div className="relative bg-[#FFFFFF] border-2 border-[#9A7B4F] p-6 sm:p-8 md:p-12 flex flex-col justify-between">
+            <span className="absolute top-0 right-0 bg-[#9A7B4F] text-[#0B111E] py-1.5 sm:py-[7px] px-2.5 sm:px-3.5 text-[9px] sm:text-[10px] font-semibold tracking-[0.1em] sm:tracking-[0.18em] font-jakarta">
+              EMPFEHLUNG FÜR DEN PILOT
+            </span>
             <div>
               <span className="self-start inline-block border border-[#E5E0D8] py-1.5 px-3 text-[10px] font-semibold tracking-[0.22em] text-[#57534E] mb-7 font-jakarta">
                 EIGENER BESTAND
@@ -87,10 +100,13 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
 
               <div className="flex items-baseline flex-wrap gap-2.5 py-6 border-t border-b border-[#E5E0D8] mb-8 font-jakarta">
                 <span className="font-cormorant font-medium text-[48px] sm:text-[56px] leading-none text-[#18181B] tabular-nums">
-                  79 €
+                  {formatEuro(pricingB.monthly)}
                 </span>
                 <span className="text-[13px] text-[#57534E]">
                   / Monat (inkl. MwSt. &amp; Kurier)
+                </span>
+                <span className="basis-full text-[12px] text-[#57534E]">
+                  Keine Einrichtungsgebühr · 1. Monat {formatEuro(pricingB.firstMonth)}
                 </span>
               </div>
 
@@ -108,7 +124,7 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
 
             <button
               onClick={() => onSelectPackage('B')}
-              className="w-full py-4 sm:py-[18px] px-3 sm:px-4 bg-[#18181B] text-[#FFFFFF] border-0 rounded-none font-jakarta text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] sm:tracking-[0.16em] uppercase cursor-pointer hover:bg-[#292524] transition-colors min-h-[48px] flex items-center justify-center text-center"
+              className="w-full py-4 sm:py-[18px] px-3 sm:px-4 bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] sm:tracking-[0.16em] uppercase cursor-pointer hover:bg-[#866941] transition-colors min-h-[48px] flex items-center justify-center text-center"
             >
               Paket B (Eigene Hemden) wählen →
             </button>
@@ -136,10 +152,13 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
 
               <div className="flex items-baseline flex-wrap gap-2.5 py-6 border-t border-b border-white/[0.14] mb-8 font-jakarta">
                 <span className="font-cormorant font-medium text-[48px] sm:text-[56px] leading-none text-[#F9F8F6] tabular-nums">
-                  119 €
+                  {formatEuro(pricingA.monthly)}
                 </span>
                 <span className="text-[13px] text-[#D6D3D1]">
                   / Monat (inkl. MwSt., Hemden &amp; Kurier)
+                </span>
+                <span className="basis-full text-[12px] text-[#D6D3D1]">
+                  zzgl. einmalig {formatEuro(pricingA.setupFee)} Erstausstattung · 1. Monat {formatEuro(pricingA.firstMonth)}
                 </span>
               </div>
 
@@ -157,7 +176,7 @@ export const Packages: React.FC<PackagesProps> = ({ onSelectPackage }) => {
 
             <button
               onClick={() => onSelectPackage('A')}
-              className="w-full py-4 sm:py-[18px] px-3 sm:px-4 bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] sm:tracking-[0.16em] uppercase cursor-pointer hover:bg-[#B08F60] transition-colors min-h-[48px] flex items-center justify-center text-center"
+              className="w-full py-4 sm:py-[18px] px-3 sm:px-4 bg-transparent text-[#F9F8F6] border border-[#9A7B4F] rounded-none font-jakarta text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] sm:tracking-[0.16em] uppercase cursor-pointer hover:bg-[#9A7B4F] hover:text-[#0B111E] transition-colors min-h-[48px] flex items-center justify-center text-center"
             >
               Paket A (Inkl. Hemden) wählen →
             </button>

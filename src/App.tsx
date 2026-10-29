@@ -4,6 +4,7 @@ import { Hero } from './components/Hero';
 import { ProblemComparison } from './components/ProblemComparison';
 import { HowItWorks } from './components/HowItWorks';
 import { Packages } from './components/Packages';
+import { B2BSection } from './components/B2BSection';
 import { TeamSection } from './components/TeamSection';
 import { PlzCheckerSection } from './components/PlzCheckerSection';
 import { FaqSection } from './components/FaqSection';
@@ -11,26 +12,34 @@ import { FunnelModal } from './components/FunnelModal';
 import { LeadManagementModal } from './components/LeadManagementModal';
 import { Footer } from './components/Footer';
 import { PackageType, LeadData } from './types';
+import { PILOT_SPOTS } from './config/pricing';
+import { fetchStats } from './services/leadService';
+import { trackFirstPackageChoice, trackPageViewOnce } from './services/tracking';
 
 export default function App() {
   const [isFunnelOpen, setIsFunnelOpen] = useState<boolean>(false);
   const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
-  const [selectedPackage, setSelectedPackage] = useState<PackageType>('A');
+  const [selectedPackage, setSelectedPackage] = useState<PackageType>('B');
   const [prefillPlz, setPrefillPlz] = useState<string>('');
   const [lastUpdatedLeads, setLastUpdatedLeads] = useState<number>(Date.now());
+  const [spotsFree, setSpotsFree] = useState<number | null>(null);
 
-  // Listen for discreet URL triggers (?admin or #admin) and keyboard shortcuts (Ctrl+Shift+L)
+  useEffect(() => {
+    trackPageViewOnce();
+  }, []);
+
+  useEffect(() => {
+    fetchStats().then((stats) => {
+      if (stats) setSpotsFree(Math.max(0, stats.spots - stats.reserved));
+    });
+  }, [lastUpdatedLeads]);
+
+  // Betreiber-Zugang: ?admin oder #admin in der URL bzw. Strg/Cmd + Shift + L.
+  // Das Modal selbst verlangt ein Admin-Token, bevor Daten geladen werden.
   useEffect(() => {
     const checkUrlParams = () => {
-      const search = window.location.search.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      if (
-        search.includes('admin') ||
-        search.includes('pilot') ||
-        search.includes('leads') ||
-        hash.includes('admin') ||
-        hash.includes('leads')
-      ) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('admin') || window.location.hash.toLowerCase() === '#admin') {
         setIsAdminOpen(true);
       }
     };
@@ -40,7 +49,6 @@ export default function App() {
     window.addEventListener('hashchange', checkUrlParams);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Shortcut: Ctrl + Shift + L or Cmd + Shift + L
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'L' || e.key === 'l')) {
         e.preventDefault();
         setIsAdminOpen((prev) => !prev);
@@ -72,22 +80,8 @@ export default function App() {
 
   const handleSelectPackage = (pkg: PackageType) => {
     setSelectedPackage(pkg);
-    const eventName = pkg === 'B' ? 'select_package_B' : 'select_package_A';
-
-    if (typeof window !== 'undefined') {
-      console.log(`📡 [Tracking] Event fired: ${eventName}`, { package: pkg });
-      // @ts-ignore
-      if (typeof window.gtag === 'function') {
-        // @ts-ignore
-        window.gtag('event', eventName, { package: pkg });
-      }
-    }
-
+    trackFirstPackageChoice(pkg);
     setIsFunnelOpen(true);
-  };
-
-  const handleHeroCta = () => {
-    handleSelectPackage('A');
   };
 
   const handleReservePlz = (plz: string) => {
@@ -95,11 +89,7 @@ export default function App() {
     handleSelectPackage(selectedPackage);
   };
 
-  const handlePackageChange = (pkg: PackageType) => {
-    setSelectedPackage(pkg);
-  };
-
-  const handleLeadSubmitted = (lead: LeadData) => {
+  const handleLeadSubmitted = (_lead: LeadData) => {
     setLastUpdatedLeads(Date.now());
   };
 
@@ -107,15 +97,16 @@ export default function App() {
     <div className="min-h-screen bg-[#F9F8F6] text-[#18181B] flex flex-col font-jakarta selection:bg-[#9A7B4F] selection:text-white">
       {/* 1. Header (fixed h-20) */}
       <Header
-        spotsFree={14}
+        spotsFree={spotsFree}
+        spotsTotal={PILOT_SPOTS}
         onNavigate={handleNavigate}
         onGoPakete={() => handleNavigate('pakete')}
       />
 
       {/* Main Content Sections */}
       <main className="flex-grow">
-        {/* 2. Hero Section (Above the Fold) */}
-        <Hero onOpenHero={handleHeroCta} />
+        {/* 2. Hero Section (Above the Fold) – CTA führt zur Paketauswahl, damit die Klickrate eine echte Wahl misst */}
+        <Hero onOpenHero={() => handleNavigate('pakete')} />
 
         {/* 3. Problem & Kontrast */}
         <ProblemComparison />
@@ -126,7 +117,10 @@ export default function App() {
         {/* 5. Pakete (A/B-Auswahl) */}
         <Packages onSelectPackage={handleSelectPackage} />
 
-        {/* 5b. Sektion 4b: Das Gründer- & Advisory-Team */}
+        {/* 5a. B2B: Kanzleien & Unternehmen */}
+        <B2BSection />
+
+        {/* 5b. Das Gründer- & Advisory-Team */}
         <TeamSection />
 
         {/* 6. PLZ-Check */}
@@ -145,11 +139,11 @@ export default function App() {
         onClose={() => setIsFunnelOpen(false)}
         selectedPackage={selectedPackage}
         prefillPlz={prefillPlz}
-        onPackageChange={handlePackageChange}
+        onPackageChange={setSelectedPackage}
         onLeadSubmitted={handleLeadSubmitted}
       />
 
-      {/* Diskretes Lead Management Center für den Betreiber (kein sichtbarer Public-Button) */}
+      {/* Lead Management Center für den Betreiber (Token-geschützt) */}
       <LeadManagementModal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}

@@ -1,13 +1,15 @@
 import React from 'react';
 
 interface HeaderProps {
-  spotsFree?: number;
+  spotsFree: number | null; // aus /api/stats; null = unbekannt, dann keine Zahl anzeigen
+  spotsTotal: number;
   onNavigate: (id: string, e: React.MouseEvent) => void;
   onGoPakete: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  spotsFree = 14,
+  spotsFree,
+  spotsTotal,
   onNavigate,
   onGoPakete,
 }) => {
@@ -53,6 +55,13 @@ export const Header: React.FC<HeaderProps> = ({
             Modelle &amp; Preise
           </a>
           <a
+            href="#unternehmen"
+            onClick={(e) => onNavigate('unternehmen', e)}
+            className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
+          >
+            Für Unternehmen
+          </a>
+          <a
             href="#team"
             onClick={(e) => onNavigate('team', e)}
             className="text-inherit hover:text-[#9A7B4F] transition-colors whitespace-nowrap"
@@ -72,13 +81,17 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-3 sm:gap-5 shrink-0 font-jakarta">
           <div className="hidden min-[1080px]:flex items-center gap-2 text-[11px] text-[#F9F8F6]/72 whitespace-nowrap">
             <span className="w-1.5 h-1.5 rounded-full bg-[#9A7B4F] inline-block animate-hp-pulse" />
-            <span>
-              Pilotphase Stuttgart:{' '}
-              <strong className="text-[#F9F8F6] font-semibold">
-                {spotsFree} von 50
-              </strong>{' '}
-              Plätzen frei
-            </span>
+            {spotsFree !== null ? (
+              <span>
+                Pilotphase Stuttgart:{' '}
+                <strong className="text-[#F9F8F6] font-semibold">
+                  {spotsFree} von {spotsTotal}
+                </strong>{' '}
+                Plätzen frei
+              </span>
+            ) : (
+              <span>Pilotphase Stuttgart: {spotsTotal} Plätze</span>
+            )}
           </div>
 
           <button

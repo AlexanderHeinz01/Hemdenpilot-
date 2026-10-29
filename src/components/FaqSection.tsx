@@ -1,27 +1,37 @@
 import React, { useState } from 'react';
 import { Plus, Minus } from 'lucide-react';
+import { PILOT_SPOTS, formatEuro, getPricing } from '../config/pricing';
+import { getPriceVariant } from '../services/session';
 
-const FAQS = [
-  {
-    q: 'Trage ich bei Paket A (119 €) Hemden, die vorher ein anderer Kunde anhatte?',
-    a: "Nein, ausgeschlossen. Wir arbeiten nach dem 'Dedicated-Leasing'-Prinzip: Zum Start Ihres Abos weisen wir Ihnen 15 fabrikneue Hemden in Ihrer exakten Kragenweite und Schnittform fest zu, digital per Chip im Etikett erfasst. Sie tragen ausschließlich Ihre persönliche Rotation – wir übernehmen Anschaffung, Pflege und den Austausch bei Verschleiß.",
-  },
-  {
-    q: 'Wie funktioniert die Übergabe, wenn ich Sonntagabend nicht zu Hause bin?',
-    a: 'Vollkommen kontaktlos über unser 2-Sack-Prinzip mit Türhaken oder wahlweise jeden Montagmorgen direkt am Empfang Ihrer Kanzlei oder Ihres Büros. Sie erhalten zwei hochwertige, wasserabweisende Kleidersäcke mit Sicherheitshaken für Ihre Wohnungstür; alternativ vereinbaren wir einen trockenen Ablageort.',
-  },
-  {
-    q: 'Was passiert bei Urlaub oder längeren Auslandsreisen?',
-    a: 'Mit einem Klick bis Freitag 12:00 Uhr pausieren Sie die Rotation für die Folgewoche – in Ihrem Kundenkonto oder per kurzer WhatsApp-Nachricht.',
-  },
-  {
-    q: 'Warum gibt es aktuell nur 50 Pilotplätze in Stuttgart?',
-    a: 'Um unsere Pünktlichkeits- und Bügelqualität ab Tag 1 zu garantieren, bauen wir unsere Kurier-Routen schrittweise nach Postleitzahl-Clustern aus. Weitere Stuttgarter Stadtteile schalten wir frei, sobald dort genügend Reservierungen vorliegen.',
-  },
-];
+const buildFaqs = () => {
+  const pricingA = getPricing(getPriceVariant(), 'A');
+  return [
+    {
+      q: `Trage ich bei Paket A (${formatEuro(pricingA.monthly)}) Hemden, die vorher ein anderer Kunde anhatte?`,
+      a: "Nein, ausgeschlossen. Wir arbeiten nach dem 'Dedicated-Leasing'-Prinzip: Zum Start Ihres Abos weisen wir Ihnen 15 fabrikneue Hemden in Ihrer exakten Kragenweite und Schnittform fest zu, digital per Chip im Etikett erfasst. Sie tragen ausschließlich Ihre persönliche Rotation – wir übernehmen Pflege und den Austausch bei Verschleiß.",
+    },
+    {
+      q: `Wofür ist die einmalige Erstausstattung von ${formatEuro(pricingA.setupFee)} bei Paket A?`,
+      a: 'Damit finanzieren wir einen Teil Ihrer 15 fabrikneuen, persönlich zugewiesenen Markenhemden. Bei Paket B mit Ihren eigenen Hemden fällt keine Einrichtungsgebühr an.',
+    },
+    {
+      q: 'Wie funktioniert die Übergabe, wenn ich nicht zu Hause bin?',
+      a: 'Vollkommen kontaktlos über unser 2-Sack-Prinzip: Sie erhalten zwei hochwertige, wasserabweisende Kleidersäcke mit Sicherheitshaken für Ihre Wohnungstür. Alternativ übergeben wir an Ihren Concierge, in den Paketraum Ihres Gebäudes oder montags am Empfang Ihres Büros. Den Wochentermin wählen Sie im Konfigurator.',
+    },
+    {
+      q: 'Was passiert bei Urlaub oder längeren Auslandsreisen?',
+      a: 'Eine kurze Nachricht per E-Mail oder WhatsApp bis Freitag 12:00 Uhr genügt, und wir pausieren die Rotation für die Folgewoche.',
+    },
+    {
+      q: `Warum ist die Zahl der Pilotplätze auf ${PILOT_SPOTS} begrenzt?`,
+      a: 'Um Pünktlichkeit und Bügelqualität ab Tag 1 zu garantieren, starten wir mit wenigen Kunden und bauen die Kurier-Routen schrittweise nach Postleitzahl-Clustern aus. Weitere Stuttgarter Stadtteile folgen, sobald dort genügend Vormerkungen vorliegen.',
+    },
+  ];
+};
 
 export const FaqSection: React.FC = () => {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
+  const faqs = buildFaqs();
 
   const toggle = (idx: number) => {
     setOpenIdx(openIdx === idx ? null : idx);
@@ -47,7 +57,7 @@ export const FaqSection: React.FC = () => {
 
         {/* Accordion */}
         <div className="border-t border-[#E5E0D8]">
-          {FAQS.map((faq, idx) => {
+          {faqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div key={idx} className="border-b border-[#E5E0D8]">

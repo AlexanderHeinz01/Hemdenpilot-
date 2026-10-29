@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ROUTES, lookupPlz } from '../data/mockRoutes';
 import { PlzRouteInfo } from '../types';
+import { track } from '../services/tracking';
 
 interface PlzCheckerSectionProps {
   onReservePlz: (plz: string) => void;
@@ -14,22 +15,28 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
     const v = e.target.value.replace(/\D/g, '').slice(0, 5);
     setPlzQuery(v);
     if (v.length === 5) {
-      setPlzResult(lookupPlz(v));
+      showResult(v);
     } else {
       setPlzResult(null);
     }
   };
 
+  const showResult = (plz: string) => {
+    const result = lookupPlz(plz);
+    setPlzResult(result);
+    track('plz_check', result.status === 'planned' ? 'outside' : result.status);
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (plzQuery.length === 5) {
-      setPlzResult(lookupPlz(plzQuery));
+      showResult(plzQuery);
     }
   };
 
   const pickChip = (plz: string) => {
     setPlzQuery(plz);
-    setPlzResult(lookupPlz(plz));
+    showResult(plz);
   };
 
   const activeChips = Object.keys(ROUTES)
@@ -47,9 +54,9 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
     }));
 
   const getStatusText = (r: PlzRouteInfo) => {
-    if (r.status === 'active') return `Pilot-Route aktiv · noch ${r.n} Plätze frei`;
-    if (r.status === 'prep') return `In Vorbereitung · noch ${r.n} Reservierungen bis zum Tour-Start`;
-    return 'Aktuell nur in Stuttgart aktiv · Vormerkung möglich';
+    if (r.status === 'active') return 'Geplantes Pilotgebiet · Vormerkung möglich';
+    if (r.status === 'prep') return 'Start abhängig von der Nachfrage · Vormerkung möglich';
+    return 'Pilot zunächst nur in Stuttgart · Vormerkung möglich';
   };
 
   return (
@@ -69,7 +76,7 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
             Liefergebiet &amp; Verfügbarkeit in <em className="italic">Stuttgart</em>
           </h2>
           <p className="m-0 text-[16px] leading-[1.7] text-[#57534E] text-pretty font-jakarta">
-            Unser Pilot startet exklusiv im Stuttgarter Stadtgebiet mit festen sonntäglichen Kurier-Routen. Prüfen Sie direkt die Postleitzahl Ihrer Wohnung oder Kanzlei.
+            Unser Pilot startet im Stuttgarter Stadtgebiet mit festen wöchentlichen Kurier-Routen. Prüfen Sie die Postleitzahl Ihrer Wohnung oder Kanzlei und merken Sie sich unverbindlich einen Platz vor.
           </p>
         </div>
 
@@ -119,7 +126,7 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
               onClick={() => onReservePlz(plzResult.plz)}
               className="w-full sm:w-auto py-3 px-5 bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] font-semibold tracking-[0.12em] sm:tracking-[0.14em] uppercase cursor-pointer whitespace-nowrap min-h-[44px] flex items-center justify-center text-center hover:bg-[#866941] transition-colors shrink-0"
             >
-              Reservieren →
+              Vormerken →
             </button>
           </div>
         )}
@@ -131,10 +138,10 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
           <div className="bg-[#FFFFFF] p-5 sm:p-7">
             <div className="flex justify-between items-baseline gap-3 mb-4 pb-3.5 border-b border-[#E5E0D8]">
               <span className="font-cormorant text-[20px] sm:text-[22px] font-semibold text-[#18181B]">
-                Aktive Pilot-Touren
+                Geplante Pilotgebiete
               </span>
               <span className="text-[10px] font-semibold tracking-[0.18em] text-[#9A7B4F] font-jakarta">
-                SOFORT BUCHBAR
+                ERSTE ROUTEN
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -156,10 +163,10 @@ export const PlzCheckerSection: React.FC<PlzCheckerSectionProps> = ({ onReserveP
           <div className="bg-[#FFFFFF] p-5 sm:p-7">
             <div className="flex justify-between items-baseline gap-3 mb-4 pb-3.5 border-b border-[#E5E0D8]">
               <span className="font-cormorant text-[20px] sm:text-[22px] font-semibold text-[#18181B]">
-                In Vorbereitung
+                Weitere Stadtteile
               </span>
               <span className="text-[10px] font-semibold tracking-[0.18em] text-[#57534E] font-jakarta">
-                START AB 15 VORMERKUNGEN
+                START NACH NACHFRAGE
               </span>
             </div>
             <div className="flex flex-wrap gap-2">

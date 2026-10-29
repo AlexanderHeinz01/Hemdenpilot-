@@ -1,30 +1,29 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   X,
   Download,
-  Copy,
   Mail,
   Trash2,
   Search,
-  Filter,
-  Check,
-  Send,
   Building,
   Home,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   Shield,
   RefreshCw,
-  FileSpreadsheet,
+  KeyRound,
 } from 'lucide-react';
-import { LeadData, PackageType } from '../types';
+import type { CompanyLead, LeadData, LeadStatus, PackageType, StoredLead } from '../types';
+import { adminApi, AdminAuthError, type AdminStatus } from '../services/leadService';
+import type { EventCounts } from '../services/kpis';
 import {
-  dispatchLead,
-  RECIPIENT_EMAIL,
-  fetchCentralLeads,
-  checkResendStatus,
-} from '../services/leadService';
+  CURRENT_SOLUTION_OPTIONS,
+  MONTHLY_SPEND_OPTIONS,
+  SHIRT_COUNT_OPTIONS,
+  SUBSIDY_OPTIONS,
+} from '../config/options';
+import { formatEuro } from '../config/pricing';
+import { KpiPanel } from './admin/KpiPanel';
 
 interface LeadManagementModalProps {
   isOpen: boolean;
@@ -32,376 +31,257 @@ interface LeadManagementModalProps {
   lastUpdated: number;
 }
 
-const STORAGE_KEY = 'hemdenpilot_leads';
-const WEBHOOK_KEY = 'hemdenpilot_webhook_url';
+type Tab = 'leads' | 'companies' | 'kpis';
 
-export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
-  isOpen,
-  onClose,
-  lastUpdated,
-}) => {
-  const [leads, setLeads] = useState<LeadData[]>([]);
+const TOKEN_KEY = 'hp_admin_token';
+const STATUSES: LeadStatus[] = ['neu', 'kontaktiert', 'in_route', 'abgeschlossen'];
+const STATUS_LABELS: Record<LeadStatus, string> = {
+  neu: 'Neu',
+  kontaktiert: 'Kontaktiert',
+  in_route: 'In Route',
+  abgeschlossen: 'Abgeschlossen',
+};
+
+function readToken(): string {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function storeToken(token: string) {
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // Token gilt dann nur, solange das Modal offen ist
+  }
+}
+
+const csvCell = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+
+function downloadCsv(filename: string, headers: string[], rows: unknown[][]) {
+  // UTF-8 BOM, damit Excel Umlaute korrekt anzeigt
+  const content = '﻿' + [headers.join(';'), ...rows.map((r) => r.map(csvCell).join(';'))].join('\r\n');
+  const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8;' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+const statusClass = (status: LeadStatus) =>
+  status === 'neu'
+    ? 'bg-[#9A7B4F]/15 border-[#9A7B4F] text-[#866941]'
+    : status === 'kontaktiert'
+    ? 'bg-blue-50 border-blue-400 text-blue-800'
+    : status === 'in_route'
+    ? 'bg-emerald-50 border-emerald-500 text-emerald-800'
+    : 'bg-stone-100 border-stone-300 text-stone-600';
+
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+const Badge: React.FC<{ ok: boolean; children: React.ReactNode }> = ({ ok, children }) => (
+  <span
+    className={`text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 border ${
+      ok ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40' : 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+    }`}
+  >
+    {children}
+  </span>
+);
+
+export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({ isOpen, onClose, lastUpdated }) => {
+  const [token, setToken] = useState<string>(readToken);
+  const [tokenInput, setTokenInput] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const [allLeads, setAllLeads] = useState<StoredLead[]>([]);
+  const [events, setEvents] = useState<EventCounts>({});
+  const [status, setStatus] = useState<AdminStatus | null>(null);
+
+  const [tab, setTab] = useState<Tab>('leads');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPackage, setFilterPackage] = useState<'ALL' | PackageType>('ALL');
-  const [filterStatus, setFilterStatus] = useState<string>('ALL');
-  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState<string>('');
-  const [webhookSaved, setWebhookSaved] = useState<boolean>(false);
-  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
-  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
-  const [resendStatus, setResendStatus] = useState<{ configured: boolean; recipient: string }>({
-    configured: false,
-    recipient: 'info@alexander-heinz.de',
-  });
+  const [filterStatus, setFilterStatus] = useState<'ALL' | LeadStatus>('ALL');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // Load leads from central server & local storage, check Resend status
-  const loadLeads = async () => {
-    const list = await fetchCentralLeads();
-    setLeads(list);
-    const status = await checkResendStatus();
-    setResendStatus(status);
+  const showFeedback = (ok: boolean, text: string) => {
+    setFeedback({ ok, text });
+    setTimeout(() => setFeedback(null), 4000);
   };
 
+  const handleError = useCallback((err: unknown) => {
+    if (err instanceof AdminAuthError) {
+      storeToken('');
+      setToken('');
+      setAuthError(err.message);
+    } else {
+      showFeedback(false, (err as Error).message || 'Unbekannter Fehler');
+    }
+  }, []);
+
+  const load = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const [leadList, eventCounts, adminStatus] = await Promise.all([
+        adminApi.leads(token),
+        adminApi.events(token),
+        adminApi.status(token),
+      ]);
+      setAllLeads(leadList);
+      setEvents(eventCounts);
+      setStatus(adminStatus);
+      setAuthError(null);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [token, handleError]);
+
   useEffect(() => {
-    loadLeads();
-    const savedWebhook = localStorage.getItem(WEBHOOK_KEY) || '';
-    setWebhookUrl(savedWebhook);
-  }, [lastUpdated, isOpen]);
+    if (isOpen) load();
+  }, [isOpen, lastUpdated, load]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
 
-  const updateLeadStatus = (id: string, newStatus: LeadData['status']) => {
-    const updated = leads.map((l) => (l.id === id ? { ...l, status: newStatus } : l));
-    setLeads(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
+  const leads = useMemo(() => allLeads.filter((l): l is LeadData => l.kind === 'private'), [allLeads]);
+  const companies = useMemo(() => allLeads.filter((l): l is CompanyLead => l.kind === 'company'), [allLeads]);
 
-  const updateLeadNote = (id: string, note: string) => {
-    const updated = leads.map((l) => (l.id === id ? { ...l, notes: note } : l));
-    setLeads(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const handleSaveWebhook = (e: React.FormEvent) => {
-    e.preventDefault();
-    localStorage.setItem(WEBHOOK_KEY, webhookUrl.trim());
-    setWebhookSaved(true);
-    setTimeout(() => setWebhookSaved(false), 2500);
-  };
-
-  const handleForwardLeadByEmail = async (leadToForward: LeadData) => {
-    setCopyFeedback(`Lead ${leadToForward.id} wird an ${RECIPIENT_EMAIL} übermittelt...`);
-    const res = await dispatchLead(leadToForward);
-    if (res.emailSent) {
-      setCopyFeedback(`✓ Lead ${leadToForward.id} erfolgreich per E-Mail an ${RECIPIENT_EMAIL} übermittelt!`);
-    } else {
-      setCopyFeedback(`E-Mail-Dispatch an ${RECIPIENT_EMAIL} ausgelöst.`);
-    }
-    setTimeout(() => setCopyFeedback(null), 4000);
-  };
-
-  const handleTestWebhook = async () => {
-    if (!webhookUrl.trim()) return;
-    try {
-      const testPayload = leads[0] || {
-        id: 'HP-TEST-70173',
-        event: 'lead_reserved',
-        package: 'A',
-        packageName: 'Paket A – Die Executive-Rotation',
-        pricePerMonth: 119,
-        firstMonthPrice: 59.5,
-        contact: {
-          plz: '70173',
-          name: 'Test Partner',
-          email: 'test@partner-stuttgart.de',
-          phone: '+49 711 123456',
-        },
-        preferences: {
-          collarSize: '41',
-          fit: 'Slim Fit',
-          colorMix: '3x Weiß / 2x Hellblau',
-          brand: 'Eton',
-        },
-        handover: {
-          type: 'B2B',
-          location: 'Kanzlei-Empfang Königstraße',
-          slot: 'Montag bis 09:00',
-          colleaguesInterested: true,
-        },
-        city: 'Stuttgart',
-        createdAt: new Date().toISOString(),
-      };
-
-      await fetch(webhookUrl.trim(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(testPayload),
-        mode: 'no-cors',
-      });
-      alert('Test-Event erfolgreich an den Webhook gesendet.');
-    } catch (err) {
-      alert('Fehler beim Webhook-Aufruf: ' + (err as Error).message);
-    }
-  };
-
-  // CSV Export with UTF-8 BOM for German Excel compatibility
-  const handleExportCsv = () => {
-    if (leads.length === 0) return;
-    const headers = [
-      'ID',
-      'Status',
-      'Paket',
-      'Monatspreis (EUR)',
-      'Probemonat (EUR)',
-      'PLZ',
-      'Name',
-      'E-Mail',
-      'Telefon',
-      'Kragenweite',
-      'Schnitt',
-      'Farb-Mix',
-      'Marke',
-      'Uebergabe-Typ',
-      'Uebergabe-Ort',
-      'Uebergabe-Zeitfenster',
-      'B2B_Kollegen_Interesse',
-      'Notizen',
-      'Erstellt_Am',
-    ];
-
-    const rows = leads.map((l) => [
-      l.id,
-      l.status || 'neu',
-      `"${l.packageName.replace(/"/g, '""')}"`,
-      l.pricePerMonth,
-      l.firstMonthPrice,
-      l.contact?.plz || '',
-      `"${(l.contact?.name || '').replace(/"/g, '""')}"`,
-      `"${(l.contact?.email || '').replace(/"/g, '""')}"`,
-      `"${(l.contact?.phone || '').replace(/"/g, '""')}"`,
-      `"${l.preferences?.collarSize || ''}"`,
-      `"${l.preferences?.fit || ''}"`,
-      `"${(l.preferences?.colorMix || '-').replace(/"/g, '""')}"`,
-      `"${(l.preferences?.brand || '').replace(/"/g, '""')}"`,
-      l.handover?.type || '',
-      `"${(l.handover?.location || '').replace(/"/g, '""')}"`,
-      `"${(l.handover?.slot || '').replace(/"/g, '""')}"`,
-      l.handover?.type === 'B2B' && (l.handover as any).colleaguesInterested ? 'Ja' : 'Nein',
-      `"${(l.notes || '').replace(/"/g, '""')}"`,
-      l.createdAt,
-    ]);
-
-    // Prepend UTF-8 BOM (\uFEFF) so Excel displays German characters properly
-    const csvContent =
-      '\uFEFF' + [headers.join(';'), ...rows.map((e) => e.join(';'))].join('\r\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `hemdenpilot_leads_stuttgart_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Copy as Tab-Separated Values (TSV) for direct paste into Google Sheets / Excel
-  const handleCopyForSheets = () => {
-    if (leads.length === 0) return;
-    const headers = [
-      'ID',
-      'Status',
-      'Paket',
-      'Monatspreis',
-      'PLZ',
-      'Name',
-      'E-Mail',
-      'Telefon',
-      'Kragenweite',
-      'Schnitt',
-      'Farb-Mix',
-      'Marke',
-      'Übergabe',
-      'B2B Kollegen',
-      'Datum',
-    ];
-
-    const rows = filteredLeads.map((l) => [
-      l.id,
-      l.status || 'neu',
-      l.package === 'A' ? 'Paket A (119 €)' : 'Paket B (79 €)',
-      `${l.pricePerMonth} €`,
-      l.contact?.plz,
-      l.contact?.name,
-      l.contact?.email,
-      l.contact?.phone || '-',
-      l.preferences?.collarSize,
-      l.preferences?.fit,
-      l.preferences?.colorMix || '-',
-      l.preferences?.brand,
-      l.handover?.location,
-      l.handover?.type === 'B2B' && (l.handover as any).colleaguesInterested ? 'Ja' : 'Nein',
-      new Date(l.createdAt).toLocaleDateString('de-DE'),
-    ]);
-
-    const tsvContent = [headers.join('\t'), ...rows.map((r) => r.join('\t'))].join('\n');
-    navigator.clipboard.writeText(tsvContent).then(() => {
-      setCopyFeedback('Tabelle in Zwischenablage kopiert! (Jetzt in Google Sheets einfügen)');
-      setTimeout(() => setCopyFeedback(null), 3000);
-    });
-  };
-
-  const handleSeedSampleLeads = () => {
-    const samples: LeadData[] = [
-      {
-        id: 'HP-70173-8412',
-        event: 'lead_reserved',
-        package: 'A',
-        packageName: 'Paket A – Die Executive-Rotation',
-        pricePerMonth: 119,
-        firstMonthPrice: 59.5,
-        status: 'neu',
-        preferences: {
-          collarSize: '41',
-          fit: 'Slim Fit',
-          colorMix: '3x Weiß / 2x Hellblau',
-          brand: 'Eton',
-        },
-        handover: {
-          type: 'B2B',
-          location: 'Kanzlei-Empfang Königstraße',
-          slot: 'Montag bis 09:00',
-          colleaguesInterested: true,
-        },
-        contact: {
-          plz: '70173',
-          name: 'Dr. Florian von Berg',
-          email: 'florian.vonberg@stuttgart-law.de',
-          phone: '+49 171 4920194',
-        },
-        city: 'Stuttgart',
-        createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-        notes: 'Große Partner-Kanzlei, hat nach 10er-Kontingent gefragt.',
-      },
-      {
-        id: 'HP-70192-3195',
-        event: 'lead_reserved',
-        package: 'B',
-        packageName: 'Paket B – Der Logistik-Autopilot',
-        pricePerMonth: 79,
-        firstMonthPrice: 39.5,
-        status: 'kontaktiert',
-        preferences: {
-          collarSize: '40',
-          fit: 'Modern / Tailored Fit',
-          colorMix: null,
-          brand: 'Olymp',
-        },
-        handover: {
-          type: 'B2C',
-          location: 'Privatadresse an der Wohnungstür',
-          slot: 'Sonntag 18:00–21:00',
-        },
-        contact: {
-          plz: '70192',
-          name: 'Maximilian Seiler',
-          email: 'm.seiler@management-partner.com',
-          phone: '+49 160 8829104',
-        },
-        city: 'Stuttgart',
-        createdAt: new Date(Date.now() - 3600000 * 14).toISOString(),
-        notes: 'Bevorzugt kontaktlose Ablage am Killesberg.',
-      },
-      {
-        id: 'HP-70567-9201',
-        event: 'lead_reserved',
-        package: 'A',
-        packageName: 'Paket A – Die Executive-Rotation',
-        pricePerMonth: 119,
-        firstMonthPrice: 59.5,
-        status: 'in_route',
-        preferences: {
-          collarSize: '42',
-          fit: 'Regular Fit',
-          colorMix: '5x Weiß',
-          brand: 'Eterna',
-        },
-        handover: {
-          type: 'B2B',
-          location: 'Unternehmensberatung Degerloch',
-          slot: 'Montag bis 09:00',
-          colleaguesInterested: true,
-        },
-        contact: {
-          plz: '70567',
-          name: 'Christoph Weber',
-          email: 'weber@weber-advisory.de',
-          phone: '+49 172 9018234',
-        },
-        city: 'Stuttgart',
-        createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
-        notes: 'Erstlieferung für kommenden Montag eingeplant.',
-      },
-    ];
-
-    const combined = [...samples, ...leads];
-    setLeads(combined);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(combined));
-  };
-
-  const handleClearAll = () => {
-    if (confirm('Möchten Sie wirklich alle gespeicherten Lead-Daten unwiderruflich löschen?')) {
-      localStorage.removeItem(STORAGE_KEY);
-      setLeads([]);
-      setSelectedLeadId(null);
-    }
-  };
-
-  // Filtered Leads
   const filteredLeads = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     return leads.filter((lead) => {
       if (filterPackage !== 'ALL' && lead.package !== filterPackage) return false;
-      if (filterStatus !== 'ALL' && (lead.status || 'neu') !== filterStatus) return false;
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesName = lead.contact?.name?.toLowerCase().includes(query);
-        const matchesEmail = lead.contact?.email?.toLowerCase().includes(query);
-        const matchesPlz = lead.contact?.plz?.includes(query);
-        const matchesId = lead.id?.toLowerCase().includes(query);
-        const matchesBrand = lead.preferences?.brand?.toLowerCase().includes(query);
-        if (!matchesName && !matchesEmail && !matchesPlz && !matchesId && !matchesBrand) {
-          return false;
-        }
-      }
-      return true;
+      if (filterStatus !== 'ALL' && lead.status !== filterStatus) return false;
+      if (!query) return true;
+      return [lead.contact.name, lead.contact.email, lead.contact.plz, lead.id, lead.preferences.brand, lead.handover.company]
+        .some((v) => v?.toLowerCase().includes(query));
     });
   }, [leads, filterPackage, filterStatus, searchQuery]);
 
-  // Statistics
-  const stats = useMemo(() => {
-    const total = leads.length;
-    const pkgA = leads.filter((l) => l.package === 'A').length;
-    const pkgB = leads.filter((l) => l.package === 'B').length;
-    const b2bInterests = leads.filter(
-      (l) => l.handover?.type === 'B2B' && (l.handover as any).colleaguesInterested
-    ).length;
-    const totalMrr = pkgA * 119 + pkgB * 79;
-    return { total, pkgA, pkgB, b2bInterests, totalMrr };
-  }, [leads]);
+  const filteredCompanies = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return companies.filter((c) => {
+      if (filterStatus !== 'ALL' && c.status !== filterStatus) return false;
+      if (!query) return true;
+      return [c.company, c.contactName, c.email, c.plz, c.id].some((v) => v.toLowerCase().includes(query));
+    });
+  }, [companies, filterStatus, searchQuery]);
 
-  const selectedLead = leads.find((l) => l.id === selectedLeadId);
+  const updateLead = async (id: string, patch: { status?: LeadStatus; notes?: string }) => {
+    try {
+      const updated = await adminApi.updateLead(token, id, patch);
+      setAllLeads((prev) => prev.map((l) => (l.id === id ? updated : l)));
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = tokenInput.trim();
+    if (!value) return;
+    storeToken(value);
+    setToken(value);
+    setTokenInput('');
+  };
+
+  const handleLogout = () => {
+    storeToken('');
+    setToken('');
+    setAllLeads([]);
+    setEvents({});
+    setStatus(null);
+  };
+
+  const handleTestMail = async () => {
+    try {
+      const res = await adminApi.testMail(token);
+      showFeedback(res.emailSent, res.emailSent ? `Test-Mail an ${res.recipient} versendet.` : 'Test-Mail konnte nicht versendet werden (RESEND_API_KEY prüfen).');
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!confirm('Alle gespeicherten Reservierungen und Firmenanfragen auf dem Server unwiderruflich löschen?')) return;
+    try {
+      await adminApi.clearLeads(token);
+      setAllLeads([]);
+      setSelectedId(null);
+      showFeedback(true, 'Alle Leads gelöscht.');
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const handleExport = () => {
+    const date = new Date().toISOString().slice(0, 10);
+    if (tab === 'companies') {
+      downloadCsv(
+        `hemdenpilot_firmenanfragen_${date}.csv`,
+        ['ID', 'Status', 'Unternehmen', 'Ansprechpartner', 'Funktion', 'E-Mail', 'Telefon', 'PLZ', 'Mitarbeiter', 'Zuschuss', 'Nachricht', 'Notizen', 'Quelle', 'Kampagne', 'Erstellt_Am'],
+        filteredCompanies.map((c) => [
+          c.id, c.status, c.company, c.contactName, c.role, c.email, c.phone, c.plz, c.employeesInterested,
+          SUBSIDY_OPTIONS[c.employerSubsidy], c.message, c.notes, c.attribution?.utm_source, c.attribution?.utm_campaign, c.createdAt,
+        ])
+      );
+      return;
+    }
+    downloadCsv(
+      `hemdenpilot_reservierungen_${date}.csv`,
+      [
+        'ID', 'Status', 'Paket', 'Preisvariante', 'Monatspreis', 'Probemonat', 'Erstausstattung', 'PLZ', 'Name', 'E-Mail', 'Telefon',
+        'Kragenweite', 'Schnitt', 'Farb-Mix', 'Marke', 'Uebergabe', 'Zeitfenster', 'Firma', 'Kollegen_ab',
+        'Hemdenbestand', 'Heutige_Loesung', 'Ausgaben_Monat', 'Sakkos_Anzuege', 'Notizen', 'Quelle', 'Kampagne', 'Erstellt_Am',
+      ],
+      filteredLeads.map((l) => [
+        l.id, l.status, l.packageName, l.priceVariant, l.pricePerMonth, l.firstMonthPrice, l.setupFee, l.contact.plz, l.contact.name,
+        l.contact.email, l.contact.phone, l.preferences.collarSize, l.preferences.fit, l.preferences.colorMix, l.preferences.brand,
+        l.handover.location, l.handover.slot, l.handover.company, l.handover.colleaguesCount,
+        l.survey.shirtCount ? SHIRT_COUNT_OPTIONS[l.survey.shirtCount] : '',
+        l.survey.currentSolution ? CURRENT_SOLUTION_OPTIONS[l.survey.currentSolution] : '',
+        l.survey.monthlySpend ? MONTHLY_SPEND_OPTIONS[l.survey.monthlySpend] : '',
+        l.survey.wantsSuits ? 'Ja' : 'Nein', l.notes, l.attribution?.utm_source, l.attribution?.utm_campaign, l.createdAt,
+      ])
+    );
+  };
 
   if (!isOpen) return null;
+
+  const selected = allLeads.find((l) => l.id === selectedId) || null;
+  const noteValue = selected ? noteDrafts[selected.id] ?? selected.notes : '';
+
+  const statusSelect = (lead: StoredLead) => (
+    <select
+      value={lead.status}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => updateLead(lead.id, { status: e.target.value as LeadStatus })}
+      className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 border outline-none cursor-pointer ${statusClass(lead.status)}`}
+    >
+      {STATUSES.map((s) => (
+        <option key={s} value={s}>
+          ● {STATUS_LABELS[s]}
+        </option>
+      ))}
+    </select>
+  );
 
   return (
     <div
@@ -420,32 +300,50 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
             </div>
             <div>
               <div className="flex items-center flex-wrap gap-2">
-                <span className="font-cormorant text-[18px] sm:text-[20px] font-medium tracking-[0.05em] text-[#F9F8F6]">
-                  HEMDENPILOT
+                <span className="font-cormorant text-[18px] sm:text-[20px] font-medium tracking-[0.05em]">HEMDENPILOT</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.16em] uppercase px-2 py-0.5 bg-[#9A7B4F]/20 text-[#D9C3A0] border border-[#9A7B4F]/40">
+                  Lead Management Center
                 </span>
-                <span className="text-[9px] sm:text-[10px] font-semibold tracking-[0.16em] sm:tracking-[0.2em] uppercase px-2 py-0.5 bg-[#9A7B4F]/20 text-[#D9C3A0] border border-[#9A7B4F]/40">
-                  Lead Management Center (Stuttgart)
-                </span>
-                {resendStatus.configured ? (
-                  <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-emerald-950/60 text-emerald-400 border border-emerald-500/40">
-                    Resend E-Mail Aktiv ({resendStatus.recipient})
-                  </span>
-                ) : (
-                  <span className="text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 bg-amber-950/60 text-amber-300 border border-amber-500/40">
-                    Resend API-Key bereitstellen
-                  </span>
+                {status && (
+                  <>
+                    <Badge ok={status.resendConfigured}>
+                      E-Mail {status.resendConfigured ? `aktiv (${status.mode})` : 'nicht konfiguriert'}
+                    </Badge>
+                    <Badge ok={status.webhookConfigured}>Sheet-Webhook {status.webhookConfigured ? 'aktiv' : 'fehlt'}</Badge>
+                    <Badge ok={status.depositConfigured}>Anzahlung {status.depositConfigured ? 'aktiv' : 'aus'}</Badge>
+                  </>
                 )}
               </div>
-              <p className="text-[10px] sm:text-[11px] text-[#A8A29E] m-0">
-                Zentrale Speicherung &amp; automatische Resend E-Mail-Weiterleitung an {resendStatus.recipient}
-              </p>
+              {status && (
+                <p className="text-[10px] sm:text-[11px] text-[#A8A29E] m-0">
+                  Benachrichtigungen an {status.recipient}. Die Liste hier zeigt den Server-Speicher; maßgeblich ist das Google Sheet.
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-auto">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            {token && (
+              <>
+                <button
+                  onClick={load}
+                  disabled={loading}
+                  className="px-3 py-1.5 bg-transparent border border-white/20 hover:bg-white/10 text-[11px] font-medium tracking-[0.1em] uppercase flex items-center gap-1.5 cursor-pointer min-h-[36px] disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span>Aktualisieren</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-1.5 bg-transparent border border-white/20 hover:bg-white/10 text-[11px] font-medium tracking-[0.1em] uppercase cursor-pointer min-h-[36px]"
+                >
+                  Abmelden
+                </button>
+              </>
+            )}
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 bg-transparent border border-white/20 text-[#F9F8F6] hover:bg-white/10 text-[11px] font-medium tracking-[0.1em] uppercase transition flex items-center gap-1.5 cursor-pointer min-h-[36px]"
+              className="px-3.5 py-1.5 bg-transparent border border-white/20 hover:bg-white/10 text-[11px] font-medium tracking-[0.1em] uppercase flex items-center gap-1.5 cursor-pointer min-h-[36px]"
             >
               <X className="w-3.5 h-3.5" />
               <span>Schließen</span>
@@ -453,576 +351,333 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({
           </div>
         </div>
 
-        {/* Top KPI Ribbon */}
-        <div className="bg-[#F2EFE9] border-b border-[#E5E0D8] px-4 sm:px-6 py-2.5 sm:py-3.5 grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 text-xs">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[#57534E]">
-              Reservierungen
-            </span>
-            <span className="text-xl font-cormorant font-semibold text-[#18181B]">
-              {stats.total} <span className="text-xs font-jakarta text-[#57534E]">von 50 Pilotplätzen</span>
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[#57534E]">
-              Paket A (Full-Service)
-            </span>
-            <span className="text-xl font-cormorant font-semibold text-[#9A7B4F]">
-              {stats.pkgA} <span className="text-xs font-jakarta text-[#57534E]">(119 € / Mt.)</span>
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[#57534E]">
-              Paket B (Eigene Hemden)
-            </span>
-            <span className="text-xl font-cormorant font-semibold text-[#18181B]">
-              {stats.pkgB} <span className="text-xs font-jakarta text-[#57534E]">(79 € / Mt.)</span>
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[#57534E]">
-              Potenzieller MRR
-            </span>
-            <span className="text-xl font-cormorant font-semibold text-[#18181B]">
-              {stats.totalMrr.toLocaleString('de-DE')} € <span className="text-xs font-jakarta text-[#57534E]">/ Monat</span>
-            </span>
-          </div>
-
-          <div className="flex flex-col">
-            <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[#57534E]">
-              B2B-Multiplikatoren
-            </span>
-            <span className="text-xl font-cormorant font-semibold text-[#18181B]">
-              {stats.b2bInterests} <span className="text-xs font-jakarta text-[#57534E]">Kanzlei-Teams</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Action Toolbar */}
-        <div className="bg-[#FFFFFF] border-b border-[#E5E0D8] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-          {/* Search & Filters */}
-          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[240px]">
-            <div className="relative flex-1 min-w-[180px] max-w-[320px]">
-              <Search className="w-3.5 h-3.5 text-[#57534E] absolute left-3 top-1/2 -translate-y-1/2" />
+        {!token ? (
+          /* Token-Abfrage */
+          <div className="flex-1 flex items-center justify-center p-6">
+            <form onSubmit={handleLogin} className="w-full max-w-[380px] bg-[#FFFFFF] border border-[#E5E0D8] p-6 flex flex-col gap-4">
+              <div className="flex items-center gap-2 text-[#9A7B4F]">
+                <KeyRound className="w-4 h-4" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.16em]">Betreiber-Zugang</span>
+              </div>
+              <p className="m-0 text-xs leading-[1.6] text-[#57534E]">
+                Bitte das Admin-Token eingeben (Umgebungsvariable <code>ADMIN_TOKEN</code> auf dem Server). Es wird nur für diese Browser-Sitzung gespeichert.
+              </p>
               <input
-                type="text"
-                placeholder="Name, E-Mail, PLZ oder ID suchen…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#F9F8F6] border border-[#E5E0D8] outline-none focus:border-[#9A7B4F]"
+                type="password"
+                autoComplete="current-password"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                className="p-3 bg-[#F9F8F6] border border-[#E5E0D8] text-sm outline-none focus:border-[#9A7B4F]"
               />
-            </div>
-
-            {/* Package Filter */}
-            <select
-              value={filterPackage}
-              onChange={(e) => setFilterPackage(e.target.value as any)}
-              className="py-1.5 px-2.5 text-xs bg-[#F9F8F6] border border-[#E5E0D8] outline-none text-[#57534E] focus:border-[#9A7B4F]"
-            >
-              <option value="ALL">Alle Pakete</option>
-              <option value="A">Nur Paket A (119 €)</option>
-              <option value="B">Nur Paket B (79 €)</option>
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="py-1.5 px-2.5 text-xs bg-[#F9F8F6] border border-[#E5E0D8] outline-none text-[#57534E] focus:border-[#9A7B4F]"
-            >
-              <option value="ALL">Alle Status</option>
-              <option value="neu">Neu</option>
-              <option value="kontaktiert">Kontaktiert</option>
-              <option value="in_route">In Route eingeplant</option>
-              <option value="abgeschlossen">Abgeschlossen</option>
-            </select>
-          </div>
-
-          {/* Export & Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={handleCopyForSheets}
-              disabled={leads.length === 0}
-              className="px-3 py-1.5 bg-[#F9F8F6] hover:bg-[#F2EFE9] border border-[#E5E0D8] text-[11px] font-semibold tracking-[0.08em] uppercase text-[#18181B] flex items-center gap-1.5 cursor-pointer disabled:opacity-40 transition"
-              title="Kopiert Tabelle formatiert für Google Sheets / Excel"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-[#9A7B4F]" />
-              <span>Tabelle für Sheets kopieren</span>
-            </button>
-
-            <button
-              onClick={handleExportCsv}
-              disabled={leads.length === 0}
-              className="px-3 py-1.5 bg-[#0B111E] hover:bg-[#18181B] text-[#F9F8F6] text-[11px] font-semibold tracking-[0.08em] uppercase flex items-center gap-1.5 cursor-pointer disabled:opacity-40 transition"
-            >
-              <Download className="w-3.5 h-3.5 text-[#9A7B4F]" />
-              <span>CSV Export (Excel)</span>
-            </button>
-
-            <button
-              onClick={() => {
-                const sample: LeadData = leads[0] || {
-                  id: `HP-TEST-${Math.floor(1000 + Math.random() * 9000)}`,
-                  event: 'lead_reserved',
-                  package: 'A',
-                  packageName: 'Paket A – Die Executive-Rotation',
-                  pricePerMonth: 119,
-                  firstMonthPrice: 59.5,
-                  status: 'neu',
-                  preferences: {
-                    collarSize: '41',
-                    fit: 'Slim Fit',
-                    colorMix: '3x Weiß / 2x Hellblau',
-                    brand: 'Eton',
-                  },
-                  handover: {
-                    type: 'B2B',
-                    location: 'Kanzlei-Empfang Stuttgart',
-                    slot: 'Montag bis 09:00',
-                    colleaguesInterested: true,
-                  },
-                  contact: {
-                    plz: '70173',
-                    name: 'Test-Interessent',
-                    email: 'alexander84.heinz@gmail.com',
-                    phone: '+49 175 3623807',
-                  },
-                  city: 'Stuttgart',
-                  createdAt: new Date().toISOString(),
-                };
-                handleForwardLeadByEmail(sample);
-              }}
-              className="px-3 py-1.5 bg-[#F9F8F6] hover:bg-[#F2EFE9] border border-[#9A7B4F]/50 text-[11px] font-semibold tracking-[0.08em] uppercase text-[#18181B] flex items-center gap-1.5 cursor-pointer transition"
-              title="Sendet Test-Lead an info@alexander-heinz.de"
-            >
-              <Mail className="w-3.5 h-3.5 text-[#9A7B4F]" />
-              <span>Test-Mail an info@alexander-heinz.de</span>
-            </button>
-
-            {leads.length === 0 && (
-              <button
-                onClick={handleSeedSampleLeads}
-                className="px-3 py-1.5 bg-[#9A7B4F] text-[#0B111E] text-[11px] font-semibold tracking-[0.08em] uppercase hover:bg-[#866941] flex items-center gap-1.5 cursor-pointer transition"
-              >
-                <RefreshCw className="w-3 h-3" />
-                <span>3 Test-Leads laden</span>
+              {authError && (
+                <div className="flex items-center gap-2 text-xs text-[#9A3412]">
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{authError}</span>
+                </div>
+              )}
+              <button type="submit" className="py-3 bg-[#0B111E] text-[#F9F8F6] text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-[#18181B]">
+                Anmelden
               </button>
-            )}
+            </form>
           </div>
-        </div>
-
-        {/* Feedback message banner */}
-        {copyFeedback && (
-          <div className="bg-[#9A7B4F]/10 border-b border-[#9A7B4F]/30 px-6 py-2 text-xs text-[#9A7B4F] font-medium flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{copyFeedback}</span>
-          </div>
-        )}
-
-        {/* Main Content Area: Leads Table + Detail Sidebar */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Table / List */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-6">
-            {filteredLeads.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 text-[#57534E]">
-                <div className="w-12 h-12 border border-[#E5E0D8] flex items-center justify-center mb-3 text-[#A8A29E]">
-                  <Search className="w-5 h-5" />
-                </div>
-                <h4 className="font-cormorant text-xl text-[#18181B] mb-1">
-                  Keine Reservierungen gefunden
-                </h4>
-                <p className="text-xs max-w-sm mb-4">
-                  {leads.length === 0
-                    ? 'Es sind aktuell noch keine Leads im System gespeichert. Sie können mit einem Klick realistische Test-Daten anlegen.'
-                    : 'Kein Lead entspricht Ihren aktuellen Filtern.'}
-                </p>
-                {leads.length === 0 && (
-                  <button
-                    onClick={handleSeedSampleLeads}
-                    className="px-4 py-2 bg-[#9A7B4F] text-[#0B111E] text-xs font-semibold uppercase tracking-wider cursor-pointer"
-                  >
-                    Beispiel-Leads laden
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="border border-[#E5E0D8] bg-[#FFFFFF]">
-                <table className="w-full border-collapse text-left text-xs font-jakarta">
-                  <thead>
-                    <tr className="bg-[#F2EFE9] text-[#57534E] text-[10px] tracking-[0.14em] uppercase border-b border-[#E5E0D8]">
-                      <th className="py-3 px-3.5 font-semibold">Status</th>
-                      <th className="py-3 px-3.5 font-semibold">Kontakt / Lead</th>
-                      <th className="py-3 px-3.5 font-semibold">PLZ &amp; Übergabe</th>
-                      <th className="py-3 px-3.5 font-semibold">Paket &amp; Konfiguration</th>
-                      <th className="py-3 px-3.5 font-semibold">Datum</th>
-                      <th className="py-3 px-3.5 font-semibold text-right">Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#E5E0D8]">
-                    {filteredLeads.map((lead) => {
-                      const isSelected = lead.id === selectedLeadId;
-                      const status = lead.status || 'neu';
-                      return (
-                        <tr
-                          key={lead.id}
-                          onClick={() => setSelectedLeadId(isSelected ? null : lead.id)}
-                          className={`hover:bg-[#F9F8F6] transition-colors cursor-pointer ${
-                            isSelected ? 'bg-[#9A7B4F]/10' : ''
-                          }`}
-                        >
-                          {/* Status */}
-                          <td className="py-3 px-3.5 align-top">
-                            <select
-                              value={status}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) =>
-                                updateLeadStatus(lead.id, e.target.value as any)
-                              }
-                              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-1 border outline-none cursor-pointer ${
-                                status === 'neu'
-                                  ? 'bg-[#9A7B4F]/15 border-[#9A7B4F] text-[#866941]'
-                                  : status === 'kontaktiert'
-                                  ? 'bg-blue-50 border-blue-400 text-blue-800'
-                                  : status === 'in_route'
-                                  ? 'bg-emerald-50 border-emerald-500 text-emerald-800'
-                                  : 'bg-stone-100 border-stone-300 text-stone-600'
-                              }`}
-                            >
-                              <option value="neu">● Neu</option>
-                              <option value="kontaktiert">● Kontaktiert</option>
-                              <option value="in_route">● In Route</option>
-                              <option value="abgeschlossen">● Abgeschlossen</option>
-                            </select>
-                          </td>
-
-                          {/* Contact Info */}
-                          <td className="py-3 px-3.5 align-top">
-                            <div className="font-semibold text-[#18181B] text-[13px]">
-                              {lead.contact?.name || 'Unbekannt'}
-                            </div>
-                            <div className="text-[#57534E] text-[11px] mt-0.5">
-                              {lead.contact?.email}
-                            </div>
-                            {lead.contact?.phone && (
-                              <div className="text-[#866941] text-[11px] mt-0.5 font-mono">
-                                {lead.contact.phone}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* PLZ & Übergabe */}
-                          <td className="py-3 px-3.5 align-top">
-                            <div className="font-semibold text-[#18181B]">
-                              PLZ {lead.contact?.plz} Stuttgart
-                            </div>
-                            <div className="text-[#57534E] text-[11px] mt-0.5 flex items-center gap-1">
-                              {lead.handover?.type === 'B2B' ? (
-                                <>
-                                  <Building className="w-3 h-3 text-[#9A7B4F]" />
-                                  <span>Büro / Kanzlei</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Home className="w-3 h-3 text-[#57534E]" />
-                                  <span>Privatwohnung</span>
-                                </>
-                              )}
-                            </div>
-                            {lead.handover?.type === 'B2B' &&
-                              (lead.handover as any).colleaguesInterested && (
-                                <span className="inline-block mt-1 text-[9px] font-semibold uppercase tracking-wider text-[#9A7B4F] bg-[#9A7B4F]/10 px-1.5 py-0.5">
-                                  3+ Kollegen B2B
-                                </span>
-                              )}
-                          </td>
-
-                          {/* Package & Config */}
-                          <td className="py-3 px-3.5 align-top">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 ${
-                                  lead.package === 'A'
-                                    ? 'bg-[#0B111E] text-[#F9F8F6]'
-                                    : 'bg-[#E5E0D8] text-[#18181B]'
-                                }`}
-                              >
-                                Paket {lead.package}
-                              </span>
-                              <span className="font-medium text-[#18181B]">
-                                {lead.pricePerMonth} €/Mt.
-                              </span>
-                            </div>
-                            <div className="text-[#57534E] text-[11px] mt-1">
-                              Gr. {lead.preferences?.collarSize} · {lead.preferences?.fit} ·{' '}
-                              {lead.preferences?.brand}
-                            </div>
-                          </td>
-
-                          {/* Date */}
-                          <td className="py-3 px-3.5 align-top text-[#57534E] text-[11px]">
-                            {new Date(lead.createdAt).toLocaleDateString('de-DE', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-3 px-3.5 align-top text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <a
-                                href={`mailto:${lead.contact?.email}?subject=Ihr%20Hemdenpilot-Start%20in%20Stuttgart%20(${lead.id})&body=Guten%20Tag%20${encodeURIComponent(
-                                  lead.contact?.name || ''
-                                )},%0D%0A%0D%0Avielen%20Dank%20f%C3%BCr%20Ihre%20Reservierung%20f%C3%BCr%20das%20${encodeURIComponent(
-                                  lead.packageName
-                                )}%20in%20Stuttgart%20(PLZ%20${
-                                  lead.contact?.plz
-                                }).%0D%0A%0D%0AWir%20bereiten%20aktuell%20die%20Routenfreigabe%20vor...`}
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-1.5 text-[#57534E] hover:text-[#9A7B4F] hover:bg-[#F2EFE9] transition"
-                                title="E-Mail an Kunden schreiben"
-                              >
-                                <Mail className="w-3.5 h-3.5" />
-                              </a>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedLeadId(lead.id);
-                                }}
-                                className="text-[10px] uppercase font-semibold text-[#866941] hover:underline"
-                              >
-                                Details →
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-
-          {/* Right Lead Detail Drawer */}
-          {selectedLead && (
-            <div className="w-[380px] bg-[#FFFFFF] border-l border-[#E5E0D8] p-6 flex flex-col justify-between overflow-y-auto">
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center justify-between pb-3 border-b border-[#E5E0D8]">
-                  <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9A7B4F]">
-                      Reservierungs-Akte
-                    </span>
-                    <h3 className="font-cormorant text-2xl font-semibold text-[#18181B] m-0">
-                      {selectedLead.id}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setSelectedLeadId(null)}
-                    className="text-[#57534E] hover:text-[#18181B] p-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Status Switcher */}
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#57534E] block mb-1.5">
-                    Aktueller Bearbeitungs-Status
-                  </span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(['neu', 'kontaktiert', 'in_route', 'abgeschlossen'] as const).map(
-                      (st) => (
-                        <button
-                          key={st}
-                          onClick={() => updateLeadStatus(selectedLead.id, st)}
-                          className={`py-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider border text-left transition ${
-                            (selectedLead.status || 'neu') === st
-                              ? 'bg-[#0B111E] text-[#F9F8F6] border-[#0B111E]'
-                              : 'bg-[#F9F8F6] text-[#57534E] border-[#E5E0D8] hover:border-[#9A7B4F]'
-                          }`}
-                        >
-                          {st === 'neu' && '1. Neu'}
-                          {st === 'kontaktiert' && '2. Kontaktiert'}
-                          {st === 'in_route' && '3. In Route'}
-                          {st === 'abgeschlossen' && '4. Abgeschlossen'}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* Lead Summary Details */}
-                <div className="space-y-3 text-xs bg-[#F9F8F6] p-4 border border-[#E5E0D8]">
-                  <div>
-                    <span className="text-[10px] uppercase font-semibold text-[#57534E] block">
-                      Kunde
-                    </span>
-                    <div className="font-semibold text-sm text-[#18181B]">
-                      {selectedLead.contact?.name}
-                    </div>
-                    <div className="text-[#57534E]">{selectedLead.contact?.email}</div>
-                    {selectedLead.contact?.phone && (
-                      <div className="text-[#866941] font-mono mt-0.5">
-                        {selectedLead.contact.phone}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-2 border-t border-[#E5E0D8]">
-                    <span className="text-[10px] uppercase font-semibold text-[#57534E] block">
-                      Paket
-                    </span>
-                    <div className="font-semibold text-[#18181B]">
-                      {selectedLead.packageName}
-                    </div>
-                    <div className="text-[#57534E]">
-                      Regulär: {selectedLead.pricePerMonth} € / Monat · Startmonat:{' '}
-                      {selectedLead.firstMonthPrice} €
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-[#E5E0D8]">
-                    <span className="text-[10px] uppercase font-semibold text-[#57534E] block">
-                      Passform &amp; Konfiguration
-                    </span>
-                    <div className="text-[#18181B]">
-                      Kragenweite: <strong>{selectedLead.preferences?.collarSize}</strong> ·{' '}
-                      {selectedLead.preferences?.fit}
-                    </div>
-                    {selectedLead.preferences?.colorMix && (
-                      <div className="text-[#18181B]">
-                        Mix: {selectedLead.preferences.colorMix}
-                      </div>
-                    )}
-                    <div className="text-[#57534E]">
-                      Bevorzugte Marke: {selectedLead.preferences?.brand}
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-[#E5E0D8]">
-                    <span className="text-[10px] uppercase font-semibold text-[#57534E] block">
-                      Übergabeort &amp; Slot
-                    </span>
-                    <div className="font-semibold text-[#18181B]">
-                      {selectedLead.handover?.location}
-                    </div>
-                    <div className="text-[#57534E]">{selectedLead.handover?.slot}</div>
-                    {selectedLead.handover?.type === 'B2B' &&
-                      (selectedLead.handover as any).colleaguesInterested && (
-                        <div className="mt-1 text-[#9A7B4F] font-semibold text-[11px]">
-                          ✓ Interesse von 3+ Kollegen in Kanzlei/Firma
-                        </div>
-                      )}
-                  </div>
-                </div>
-
-                {/* Internal Operator Notes */}
-                <div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-[#57534E] block mb-1">
-                    Interne Notizen zum Kunden
-                  </span>
-                  <textarea
-                    rows={3}
-                    placeholder="z. B. Bevorzugt telefonischen Kontakt vor 10 Uhr..."
-                    value={
-                      editingNotes[selectedLead.id] !== undefined
-                        ? editingNotes[selectedLead.id]
-                        : selectedLead.notes || ''
-                    }
-                    onChange={(e) =>
-                      setEditingNotes({
-                        ...editingNotes,
-                        [selectedLead.id]: e.target.value,
-                      })
-                    }
-                    onBlur={() => {
-                      if (editingNotes[selectedLead.id] !== undefined) {
-                        updateLeadNote(selectedLead.id, editingNotes[selectedLead.id]);
-                      }
-                    }}
-                    className="w-full p-2.5 bg-[#FFFFFF] border border-[#E5E0D8] text-xs outline-none focus:border-[#9A7B4F]"
-                  />
-                  <span className="text-[10px] text-[#A8A29E]">
-                    Notiz wird automatisch beim Verlassen des Feldes gespeichert.
-                  </span>
-                </div>
-              </div>
-
-              {/* Bottom Quick Contact Action */}
-              <div className="pt-4 border-t border-[#E5E0D8] flex flex-col gap-2">
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="bg-[#F2EFE9] border-b border-[#E5E0D8] px-4 sm:px-6 flex gap-1 text-[11px] font-semibold uppercase tracking-[0.12em]">
+              {([
+                ['leads', `Reservierungen (${leads.length})`],
+                ['companies', `Firmenanfragen (${companies.length})`],
+                ['kpis', 'Kennzahlen'],
+              ] as [Tab, string][]).map(([key, label]) => (
                 <button
-                  type="button"
-                  onClick={() => handleForwardLeadByEmail(selectedLead)}
-                  className="w-full py-2.5 bg-[#0B111E] text-[#F9F8F6] text-center text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#18181B] transition cursor-pointer"
+                  key={key}
+                  onClick={() => {
+                    setTab(key);
+                    setSelectedId(null);
+                  }}
+                  className={`px-3 sm:px-4 py-3 border-b-2 cursor-pointer transition-colors ${
+                    tab === key ? 'border-[#9A7B4F] text-[#18181B]' : 'border-transparent text-[#57534E] hover:text-[#18181B]'
+                  }`}
                 >
-                  <Send className="w-3.5 h-3.5 text-[#9A7B4F]" />
-                  <span>An {RECIPIENT_EMAIL} senden</span>
+                  {label}
                 </button>
-                <a
-                  href={`mailto:${selectedLead.contact?.email}?subject=Ihr%20Hemdenpilot-Start%20in%20Stuttgart%20(${selectedLead.id})`}
-                  className="w-full py-2.5 bg-[#9A7B4F] text-[#0B111E] text-center text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#866941] transition"
-                >
-                  <Mail className="w-3.5 h-3.5" />
-                  <span>Kunde per E-Mail kontaktieren</span>
-                </a>
-              </div>
+              ))}
             </div>
-          )}
-        </div>
 
-        {/* Bottom Integration / Settings Bar */}
-        <div className="bg-[#F2EFE9] border-t border-[#E5E0D8] px-6 py-3 flex flex-wrap items-center justify-between gap-4 text-xs">
-          {/* Webhook Configuration */}
-          <form
-            onSubmit={handleSaveWebhook}
-            className="flex items-center gap-2 flex-1 max-w-[560px]"
-          >
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#57534E] shrink-0">
-              Webhook URL (Zapier / Sheets):
-            </span>
-            <input
-              type="url"
-              placeholder="https://hook.eu1.make.com/... oder Zapier Webhook"
-              value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              className="py-1 px-2.5 text-xs bg-[#FFFFFF] border border-[#E5E0D8] flex-1 outline-none focus:border-[#9A7B4F]"
-            />
-            <button
-              type="submit"
-              className="px-2.5 py-1 bg-[#0B111E] text-[#F9F8F6] text-[10px] font-semibold uppercase tracking-wider hover:bg-[#18181B]"
-            >
-              {webhookSaved ? 'Gespeichert!' : 'Speichern'}
-            </button>
-            {webhookUrl && (
-              <button
-                type="button"
-                onClick={handleTestWebhook}
-                className="px-2.5 py-1 bg-[#FFFFFF] border border-[#E5E0D8] text-[10px] font-semibold uppercase tracking-wider text-[#57534E] hover:text-[#18181B]"
-                title="Sendet Test-Payload an Webhook"
-              >
-                Test
-              </button>
+            {/* Action Toolbar */}
+            {tab !== 'kpis' && (
+              <div className="bg-[#FFFFFF] border-b border-[#E5E0D8] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[240px]">
+                  <div className="relative flex-1 min-w-[180px] max-w-[320px]">
+                    <Search className="w-3.5 h-3.5 text-[#57534E] absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Name, Firma, E-Mail, PLZ oder ID…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#F9F8F6] border border-[#E5E0D8] outline-none focus:border-[#9A7B4F]"
+                    />
+                  </div>
+                  {tab === 'leads' && (
+                    <select
+                      value={filterPackage}
+                      onChange={(e) => setFilterPackage(e.target.value as 'ALL' | PackageType)}
+                      className="py-1.5 px-2.5 text-xs bg-[#F9F8F6] border border-[#E5E0D8] outline-none text-[#57534E]"
+                    >
+                      <option value="ALL">Alle Pakete</option>
+                      <option value="A">Nur Paket A</option>
+                      <option value="B">Nur Paket B</option>
+                    </select>
+                  )}
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as 'ALL' | LeadStatus)}
+                    className="py-1.5 px-2.5 text-xs bg-[#F9F8F6] border border-[#E5E0D8] outline-none text-[#57534E]"
+                  >
+                    <option value="ALL">Alle Status</option>
+                    {STATUSES.map((s) => (
+                      <option key={s} value={s}>
+                        {STATUS_LABELS[s]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={handleExport}
+                    disabled={tab === 'leads' ? filteredLeads.length === 0 : filteredCompanies.length === 0}
+                    className="px-3 py-1.5 bg-[#0B111E] hover:bg-[#18181B] text-[#F9F8F6] text-[11px] font-semibold tracking-[0.08em] uppercase flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                  >
+                    <Download className="w-3.5 h-3.5 text-[#9A7B4F]" />
+                    <span>CSV Export</span>
+                  </button>
+                  <button
+                    onClick={handleTestMail}
+                    className="px-3 py-1.5 bg-[#F9F8F6] hover:bg-[#F2EFE9] border border-[#9A7B4F]/50 text-[11px] font-semibold tracking-[0.08em] uppercase flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-[#9A7B4F]" />
+                    <span>Test-Mail</span>
+                  </button>
+                </div>
+              </div>
             )}
-          </form>
 
-          {/* Reset / Dangerous Actions */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleClearAll}
-              disabled={leads.length === 0}
-              className="text-[#9A3412] hover:underline text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
-            >
-              <Trash2 className="w-3 h-3" />
-              <span>Alle Leads löschen</span>
-            </button>
-          </div>
-        </div>
+            {feedback && (
+              <div
+                className={`border-b px-6 py-2 text-xs font-medium flex items-center gap-2 ${
+                  feedback.ok ? 'bg-[#9A7B4F]/10 border-[#9A7B4F]/30 text-[#866941]' : 'bg-red-50 border-red-200 text-red-800'
+                }`}
+              >
+                {feedback.ok ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                <span>{feedback.text}</span>
+              </div>
+            )}
+
+            {/* Main Content */}
+            <div className="flex-1 flex overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+                {tab === 'kpis' && <KpiPanel leads={leads} companies={companies} events={events} />}
+
+                {tab === 'leads' &&
+                  (filteredLeads.length === 0 ? (
+                    <p className="text-center text-xs text-[#57534E] py-16">
+                      {leads.length === 0 ? 'Noch keine Reservierungen gespeichert.' : 'Kein Lead entspricht Ihren Filtern.'}
+                    </p>
+                  ) : (
+                    <div className="border border-[#E5E0D8] bg-[#FFFFFF] overflow-x-auto">
+                      <table className="w-full border-collapse text-left text-xs">
+                        <thead>
+                          <tr className="bg-[#F2EFE9] text-[#57534E] text-[10px] tracking-[0.14em] uppercase border-b border-[#E5E0D8]">
+                            <th className="py-3 px-3.5 font-semibold">Status</th>
+                            <th className="py-3 px-3.5 font-semibold">Kontakt</th>
+                            <th className="py-3 px-3.5 font-semibold">PLZ &amp; Übergabe</th>
+                            <th className="py-3 px-3.5 font-semibold">Paket</th>
+                            <th className="py-3 px-3.5 font-semibold">Datum</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E5E0D8]">
+                          {filteredLeads.map((lead) => (
+                            <tr
+                              key={lead.id}
+                              onClick={() => setSelectedId(lead.id === selectedId ? null : lead.id)}
+                              className={`hover:bg-[#F9F8F6] cursor-pointer ${lead.id === selectedId ? 'bg-[#9A7B4F]/10' : ''}`}
+                            >
+                              <td className="py-3 px-3.5 align-top">{statusSelect(lead)}</td>
+                              <td className="py-3 px-3.5 align-top">
+                                <div className="font-semibold text-[13px]">{lead.contact.name}</div>
+                                <div className="text-[#57534E] text-[11px] mt-0.5">{lead.contact.email}</div>
+                                {lead.contact.phone && <div className="text-[#866941] text-[11px] mt-0.5 font-mono">{lead.contact.phone}</div>}
+                              </td>
+                              <td className="py-3 px-3.5 align-top">
+                                <div className="font-semibold">PLZ {lead.contact.plz}</div>
+                                <div className="text-[#57534E] text-[11px] mt-0.5 flex items-center gap-1">
+                                  {lead.handover.type === 'B2B' ? <Building className="w-3 h-3 text-[#9A7B4F]" /> : <Home className="w-3 h-3" />}
+                                  <span>{lead.handover.location}</span>
+                                </div>
+                                {lead.handover.type === 'B2B' && (lead.handover.company || lead.handover.colleaguesCount) ? (
+                                  <span className="inline-block mt-1 text-[9px] font-semibold uppercase tracking-wider text-[#9A7B4F] bg-[#9A7B4F]/10 px-1.5 py-0.5">
+                                    {lead.handover.company || 'Firma ?'} · {lead.handover.colleaguesCount ?? 0}+ Kollegen
+                                  </span>
+                                ) : null}
+                              </td>
+                              <td className="py-3 px-3.5 align-top">
+                                <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 ${lead.package === 'A' ? 'bg-[#0B111E] text-[#F9F8F6]' : 'bg-[#E5E0D8]'}`}>
+                                  Paket {lead.package}
+                                </span>{' '}
+                                <span className="font-medium">{formatEuro(lead.pricePerMonth)}</span>
+                                {lead.priceVariant !== 'standard' && <div className="text-[10px] text-[#866941] mt-1">Preistest {lead.priceVariant}</div>}
+                              </td>
+                              <td className="py-3 px-3.5 align-top text-[#57534E] text-[11px]">{formatDate(lead.createdAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+
+                {tab === 'companies' &&
+                  (filteredCompanies.length === 0 ? (
+                    <p className="text-center text-xs text-[#57534E] py-16">
+                      {companies.length === 0 ? 'Noch keine Firmenanfragen.' : 'Keine Anfrage entspricht Ihren Filtern.'}
+                    </p>
+                  ) : (
+                    <div className="border border-[#E5E0D8] bg-[#FFFFFF] overflow-x-auto">
+                      <table className="w-full border-collapse text-left text-xs">
+                        <thead>
+                          <tr className="bg-[#F2EFE9] text-[#57534E] text-[10px] tracking-[0.14em] uppercase border-b border-[#E5E0D8]">
+                            <th className="py-3 px-3.5 font-semibold">Status</th>
+                            <th className="py-3 px-3.5 font-semibold">Unternehmen</th>
+                            <th className="py-3 px-3.5 font-semibold">Ansprechpartner</th>
+                            <th className="py-3 px-3.5 font-semibold">PLZ</th>
+                            <th className="py-3 px-3.5 font-semibold">Mitarbeiter</th>
+                            <th className="py-3 px-3.5 font-semibold">Zuschuss</th>
+                            <th className="py-3 px-3.5 font-semibold">Datum</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E5E0D8]">
+                          {filteredCompanies.map((c) => (
+                            <tr
+                              key={c.id}
+                              onClick={() => setSelectedId(c.id === selectedId ? null : c.id)}
+                              className={`hover:bg-[#F9F8F6] cursor-pointer ${c.id === selectedId ? 'bg-[#9A7B4F]/10' : ''}`}
+                            >
+                              <td className="py-3 px-3.5 align-top">{statusSelect(c)}</td>
+                              <td className="py-3 px-3.5 align-top font-semibold text-[13px]">{c.company}</td>
+                              <td className="py-3 px-3.5 align-top">
+                                <div>{c.contactName}{c.role ? ` (${c.role})` : ''}</div>
+                                <div className="text-[#57534E] text-[11px]">{c.email}</div>
+                              </td>
+                              <td className="py-3 px-3.5 align-top">{c.plz}</td>
+                              <td className={`py-3 px-3.5 align-top ${c.employeesInterested >= 4 ? 'font-semibold text-[#866941]' : ''}`}>{c.employeesInterested}</td>
+                              <td className="py-3 px-3.5 align-top">{SUBSIDY_OPTIONS[c.employerSubsidy]}</td>
+                              <td className="py-3 px-3.5 align-top text-[#57534E] text-[11px]">{formatDate(c.createdAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+              </div>
+
+              {/* Detail-Ansicht */}
+              {selected && tab !== 'kpis' && (
+                <div className="w-[360px] shrink-0 bg-[#FFFFFF] border-l border-[#E5E0D8] p-5 overflow-y-auto flex flex-col gap-4 text-xs">
+                  <div className="flex items-start justify-between pb-3 border-b border-[#E5E0D8]">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9A7B4F]">
+                        {selected.kind === 'company' ? 'Firmenanfrage' : 'Reservierung'}
+                      </span>
+                      <h3 className="font-cormorant text-xl font-semibold m-0">{selected.id}</h3>
+                    </div>
+                    <button onClick={() => setSelectedId(null)} className="text-[#57534E] hover:text-[#18181B] p-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="bg-[#F9F8F6] border border-[#E5E0D8] p-4 space-y-2">
+                    {selected.kind === 'private' ? (
+                      <>
+                        <div><strong>{selected.contact.name}</strong><br />{selected.contact.email}<br />{selected.contact.phone}</div>
+                        <div className="pt-2 border-t border-[#E5E0D8]">
+                          {selected.packageName}<br />
+                          {formatEuro(selected.pricePerMonth)} / Monat · 1. Monat {formatEuro(selected.firstMonthPrice)}
+                          {selected.setupFee > 0 && <> · Erstausstattung {formatEuro(selected.setupFee)}</>}
+                        </div>
+                        {selected.package === 'A' && (
+                          <div className="pt-2 border-t border-[#E5E0D8]">
+                            Kragenweite {selected.preferences.collarSize} · {selected.preferences.fit} · {selected.preferences.colorMix}
+                          </div>
+                        )}
+                        <div className="pt-2 border-t border-[#E5E0D8]">Marke: {selected.preferences.brand}</div>
+                        <div className="pt-2 border-t border-[#E5E0D8]">
+                          {selected.handover.location} ({selected.handover.slot})
+                          {selected.handover.type === 'B2B' && (
+                            <><br />Firma: {selected.handover.company || '–'} · Kollegen: {selected.handover.colleaguesCount ?? 0}+</>
+                          )}
+                        </div>
+                        <div className="pt-2 border-t border-[#E5E0D8] text-[#57534E]">
+                          Hemden: {selected.survey.shirtCount ? SHIRT_COUNT_OPTIONS[selected.survey.shirtCount] : '–'}<br />
+                          Heute: {selected.survey.currentSolution ? CURRENT_SOLUTION_OPTIONS[selected.survey.currentSolution] : '–'}<br />
+                          Ausgaben: {selected.survey.monthlySpend ? MONTHLY_SPEND_OPTIONS[selected.survey.monthlySpend] : '–'}<br />
+                          Sakkos/Anzüge: {selected.survey.wantsSuits ? 'Ja' : 'Nein'}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div><strong>{selected.company}</strong><br />{selected.contactName}{selected.role ? ` (${selected.role})` : ''}<br />{selected.email}<br />{selected.phone}</div>
+                        <div className="pt-2 border-t border-[#E5E0D8]">
+                          PLZ {selected.plz} · {selected.employeesInterested} Mitarbeiter · Zuschuss: {SUBSIDY_OPTIONS[selected.employerSubsidy]}
+                        </div>
+                        {selected.message && <div className="pt-2 border-t border-[#E5E0D8] whitespace-pre-wrap">{selected.message}</div>}
+                      </>
+                    )}
+                    <div className="pt-2 border-t border-[#E5E0D8] text-[#57534E]">
+                      Quelle: {selected.attribution?.utm_source || 'direkt'}
+                      {selected.attribution?.utm_campaign && ` / ${selected.attribution.utm_campaign}`}
+                    </div>
+                  </div>
+
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[#57534E]">Interne Notizen</span>
+                    <textarea
+                      rows={4}
+                      value={noteValue}
+                      onChange={(e) => setNoteDrafts({ ...noteDrafts, [selected.id]: e.target.value })}
+                      onBlur={() => {
+                        if (noteDrafts[selected.id] !== undefined && noteDrafts[selected.id] !== selected.notes) {
+                          updateLead(selected.id, { notes: noteDrafts[selected.id] });
+                        }
+                      }}
+                      className="w-full p-2.5 border border-[#E5E0D8] outline-none focus:border-[#9A7B4F]"
+                    />
+                    <span className="text-[10px] text-[#A8A29E]">Wird beim Verlassen des Feldes auf dem Server gespeichert.</span>
+                  </label>
+
+                  <a
+                    href={`mailto:${selected.kind === 'company' ? selected.email : selected.contact.email}?subject=${encodeURIComponent(`Ihre Hemdenpilot-Anfrage (${selected.id})`)}`}
+                    className="w-full py-2.5 bg-[#9A7B4F] text-[#0B111E] text-center font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 hover:bg-[#866941]"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Per E-Mail kontaktieren</span>
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="bg-[#F2EFE9] border-t border-[#E5E0D8] px-6 py-3 flex items-center justify-end text-xs">
+              <button
+                onClick={handleClearAll}
+                disabled={allLeads.length === 0}
+                className="text-[#9A3412] hover:underline text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Alle Leads auf dem Server löschen</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

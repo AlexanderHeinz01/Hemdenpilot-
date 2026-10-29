@@ -25,14 +25,14 @@ export const Hero: React.FC<HeroProps> = ({ onOpenHero }) => {
           </h1>
 
           <p className="text-[16px] sm:text-[18px] leading-[1.65] text-[#D6D3D1] mb-8 sm:mb-11 max-w-[560px] font-jakarta">
-            Der erste vollautomatische Hemden-Autopilot für Partner, Berater und Führungskräfte in Stuttgart. Wir tauschen jeden Sonntagabend kontaktlos an Ihrer Tür – oder montags am Empfang Ihrer Kanzlei – fünf getragene gegen fünf frisch aufbereitete Business-Hemden.
+            Der erste vollautomatische Hemden-Autopilot für Partner, Berater und Führungskräfte in Stuttgart. Einmal pro Woche tauschen wir kontaktlos – an Ihrer Wohnungstür, beim Concierge oder am Empfang Ihrer Kanzlei – fünf getragene gegen fünf frisch aufbereitete Business-Hemden.
           </p>
 
           <button
             onClick={onOpenHero}
             className="w-full sm:w-auto inline-flex items-center justify-center text-center gap-3 py-4 sm:py-[18px] px-6 sm:px-8 bg-[#9A7B4F] text-[#0B111E] border-0 rounded-none font-jakarta text-[11px] sm:text-[12px] font-semibold tracking-[0.08em] sm:tracking-[0.12em] uppercase cursor-pointer mb-10 sm:mb-12 hover:bg-[#866941] transition-colors min-h-[48px]"
           >
-            Wunsch-Modell &amp; PLZ prüfen →
+            Modelle &amp; Preise ansehen →
           </button>
 
           {/* Trust-Leiste */}

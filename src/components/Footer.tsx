@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import type { LegalKey } from '../services/legal';
+import { DEPOSIT_AMOUNT, SETUP_FEE_A, formatEuro } from '../config/pricing';
 
 interface FooterProps {
   onOpenAdmin?: () => void;
 }
 
-type LegalModalKey = 'impressum' | 'datenschutz' | 'agb';
+type LegalModalKey = LegalKey;
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   const [legalKey, setLegalKey] = useState<LegalModalKey | null>(null);
+
+  // Formulare können die Rechtstexte über openLegal() öffnen
+  useEffect(() => {
+    const handleOpen = (e: Event) => setLegalKey((e as CustomEvent<LegalKey>).detail);
+    window.addEventListener('hp:open-legal', handleOpen);
+    return () => window.removeEventListener('hp:open-legal', handleOpen);
+  }, []);
 
   useEffect(() => {
     if (legalKey) {
@@ -214,7 +223,22 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
                   <div className="pt-2 border-t border-[#E5E0D8]">
                     <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
-                      § 4 Haftung
+                      § 4 Erstausstattung bei Paket A und freiwillige Anzahlung
+                    </h4>
+                    <p className="m-0 mb-2">
+                      (1) Bei Paket A fällt mit Abschluss des späteren Vertrags (§ 3) einmalig eine Erstausstattung von {formatEuro(SETUP_FEE_A)} für die 15 persönlich zugewiesenen Hemden an. Mit der Vorreservierung entsteht hierfür keine Zahlungspflicht.
+                    </p>
+                    <p className="m-0 mb-2">
+                      (2) Nach der Vorreservierung kann der Nutzer freiwillig eine Anzahlung von {formatEuro(DEPOSIT_AMOUNT)} über den Zahlungsdienstleister Stripe leisten. Nutzer mit Anzahlung werden beim Start der Routen in ihrem Postleitzahlengebiet vorrangig berücksichtigt.
+                    </p>
+                    <p className="m-0">
+                      (3) Die Anzahlung wird bei Vertragsschluss vollständig mit dem ersten Monatsbeitrag verrechnet. Kommt kein Vertrag zustande – gleich aus welchem Grund –, oder verlangt der Nutzer sie vor Vertragsschluss zurück, erstattet der Anbieter sie innerhalb von 14 Tagen vollständig über das ursprüngliche Zahlungsmittel. Eine formlose Nachricht an info@alexander-heinz.de genügt.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#E5E0D8]">
+                    <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
+                      § 5 Haftung
                     </h4>
                     <p className="m-0 mb-2">
                       (1) Für Ansprüche aufgrund von Schäden, die durch uns, unsere gesetzlichen Vertreter oder Erfüllungsgehilfen verursacht wurden, haften wir stets unbeschränkt bei Verletzung des Lebens, des Körpers oder der Gesundheit sowie bei vorsätzlicher oder grob fahrlässiger Pflichtverletzung.
@@ -226,7 +250,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
                   <div className="pt-2 border-t border-[#E5E0D8]">
                     <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
-                      § 5 Schlussbestimmungen
+                      § 6 Schlussbestimmungen
                     </h4>
                     <p className="m-0">
                       Es gilt das Recht der Bundesrepublik Deutschland. Sofern der Nutzer Kaufmann ist, ist ausschließlicher Gerichtsstand für alle Streitigkeiten der Sitz des Anbieters.
@@ -268,7 +292,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
                       2. Hosting und Bereitstellung der Website
                     </h4>
                     <p className="m-0 mb-2">
-                      Diese Website wird bei einem externen Dienstleister gehostet (z. B. Google Cloud / Cloud Run / Vercel). Beim Aufruf dieser Website werden durch den Hosting-Anbieter automatisch sogenannte Server-Log-Dateien erhoben und gespeichert, die Ihr Browser automatisch übermittelt. Dies sind:
+                      Diese Website wird bei Google Cloud Run (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland) gehostet. Mit dem Anbieter besteht ein Vertrag zur Auftragsverarbeitung; eine Übermittlung in die USA kann nicht ausgeschlossen werden und erfolgt auf Grundlage des EU-US Data Privacy Framework bzw. der EU-Standardvertragsklauseln. Beim Aufruf dieser Website werden durch den Hosting-Anbieter automatisch sogenannte Server-Log-Dateien erhoben und gespeichert, die Ihr Browser automatisch übermittelt. Dies sind:
                     </p>
                     <ul className="list-disc pl-5 m-0 mb-3 space-y-1">
                       <li>IP-Adresse des anfragenden Endgeräts</li>
@@ -293,6 +317,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
                       <li>Optionale Angaben zu Hemdengröße, Schnitt, Markenpräferenz sowie bevorzugtem Übergabeort (Haustür oder Büro)</li>
                       <li>Postleitzahl (zur Routenplanung)</li>
                       <li>Vor- und Nachname, E-Mail-Adresse sowie optional Ihre Telefonnummer</li>
+                      <li>Optionale Angaben zu Hemdenbestand, heutiger Lösung, ungefähren monatlichen Ausgaben und Interesse an weiteren Kleidungsstücken</li>
+                      <li>Bei Firmenanfragen: Unternehmen, Funktion, Standort-PLZ und Anzahl interessierter Mitarbeiter</li>
+                      <li>Die Kampagne, über die Sie auf die Seite gekommen sind (UTM-Parameter der Anzeige, verweisende Website), um die Wirksamkeit unserer Werbung je Kanal auszuwerten</li>
                     </ul>
                     <p className="m-0 mb-3">
                       <strong className="text-[#18181B]">Zweck und Rechtsgrundlage:</strong><br />
@@ -307,16 +334,48 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
                   <div className="pt-2 border-t border-[#E5E0D8]">
                     <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
-                      4. Schriftarten (Web Fonts)
+                      4. Empfänger Ihrer Reservierungsdaten
                     </h4>
+                    <p className="m-0 mb-2">
+                      Zur Bearbeitung Ihrer Reservierung bzw. Anfrage setzen wir folgende Dienstleister als Auftragsverarbeiter ein (Art. 28 DSGVO):
+                    </p>
+                    <ul className="list-disc pl-5 m-0 mb-3 space-y-1">
+                      <li>
+                        <strong className="text-[#18181B]">Resend</strong> (Resend Inc., 2261 Market Street #5039, San Francisco, CA 94114, USA) für den Versand der Benachrichtigung an uns per E-Mail. Die Übermittlung in die USA erfolgt auf Grundlage der EU-Standardvertragsklauseln bzw. des EU-US Data Privacy Framework.
+                      </li>
+                      <li>
+                        <strong className="text-[#18181B]">Make</strong> (Celonis s.r.o., Prag, Tschechien) und <strong className="text-[#18181B]">Google Workspace / Google Sheets</strong> (Google Ireland Limited, Dublin, Irland) für die geordnete Ablage der Reservierungen in einer Tabelle.
+                      </li>
+                      <li>
+                        Falls Sie eine Anzahlung leisten: <strong className="text-[#18181B]">Stripe</strong> (Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Irland) als Zahlungsdienstleister. Dabei gelten zusätzlich die Datenschutzhinweise von Stripe; Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#E5E0D8]">
+                    <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
+                      5. Reichweitenmessung ohne Cookies
+                    </h4>
+                    <p className="m-0 mb-2">
+                      Um zu verstehen, wie die Seite genutzt wird, zählen wir auf unserem eigenen Server anonym bestimmte Ereignisse (z. B. Seitenaufruf, Klick auf ein Paket, erreichte Schritte im Konfigurator, Ergebnis der PLZ-Prüfung). Gespeichert wird nur die Anzahl je Ereignis und Tag – ohne IP-Adresse, ohne Cookies und ohne Profilbildung. Damit Sie innerhalb eines Besuchs nicht mehrfach gezählt werden, wird lediglich ein Merker im Sitzungsspeicher Ihres Browsers abgelegt, der beim Schließen des Tabs gelöscht wird.
+                    </p>
                     <p className="m-0">
-                      Diese Seite nutzt zur einheitlichen Darstellung von Schriftarten sogenannte Web Fonts. Sofern diese über Server von Google (Google Fonts, Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland) geladen werden, erlangt Google beim Aufruf der Seite Kenntnis darüber, dass über Ihre IP-Adresse unsere Website aufgerufen wurde. Die Nutzung erfolgt im Interesse einer einheitlichen und ansprechenden Darstellung unserer Online-Angebote (Art. 6 Abs. 1 lit. f DSGVO).
+                      Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an der Auswertung unseres Markttests) bzw. § 25 Abs. 2 Nr. 2 TDDDG für den technisch erforderlichen Sitzungsspeicher.
                     </p>
                   </div>
 
                   <div className="pt-2 border-t border-[#E5E0D8]">
                     <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
-                      5. Ihre Rechte als betroffene Person
+                      6. Schriftarten
+                    </h4>
+                    <p className="m-0">
+                      Die verwendeten Schriftarten sind lokal auf unserem Server eingebunden. Beim Aufruf der Seite findet keine Verbindung zu Servern Dritter (z. B. Google Fonts) statt.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#E5E0D8]">
+                    <h4 className="font-cormorant font-semibold text-[18px] sm:text-[20px] text-[#18181B] mb-2">
+                      7. Ihre Rechte als betroffene Person
                     </h4>
                     <p className="m-0 mb-2">
                       Sie haben im Rahmen der geltenden gesetzlichen Bestimmungen jederzeit das Recht auf:
