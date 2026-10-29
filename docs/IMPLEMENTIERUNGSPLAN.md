@@ -3,6 +3,27 @@
 **Stand:** 29.10.2026 · **Basis:** kritische Projektanalyse + Code-Review von `main` (Commit `5922029`)
 **Ziel:** Die Landingpage so umbauen, dass der Smoke-Test (1) rechtssicher läuft, (2) die richtigen Annahmen misst (B2B-Bündelung, echte Zahlungsbereitschaft) und (3) das Angebot an die wirtschaftlich tragfähige Variante angepasst ist.
 
+## Umsetzungsstand (29.10.2026)
+
+Entscheidungen: Empfehlungen E1–E7 übernommen; E3 bestätigt (alle Team-Mitglieder real und einverstanden).
+
+| Bereich | Stand |
+|---|---|
+| Phase 0 (Sicherheit, Datenschutz, UWG) | ✅ umgesetzt |
+| Phase 1 (Messbarkeit) | ✅ umgesetzt |
+| Phase 2 (Angebot & Funnel) | ✅ umgesetzt |
+| Phase 4 (Dossier) | ✅ korrigierte Fassung in `docs/projektstatus_hemdenpilot.md` |
+| Aufräumen | ✅ umgesetzt (zusätzlich: Abhängigkeitskonflikt esbuild/vite behoben, ungenutzte Pakete entfernt, veraltete Rechtstext-Kopien aus `public/` gelöscht) |
+| E2 (Leads aus Git-Historie) | ✅ Historie bereinigt, Force-Push auf `main` |
+| Phase 3 (außerhalb des Codes) | ⏳ offen – liegt beim Team |
+
+**Vor dem Ad-Start im Hosting zu setzen:** `ADMIN_TOKEN`, `LEAD_WEBHOOK_URL` (Make-Szenario → Google Sheet anlegen), `RESEND_API_KEY` + verifizierte `RESEND_FROM_EMAIL`, optional `STRIPE_DEPOSIT_URL` und `DATA_DIR` (persistentes Volume). Die Datenschutzerklärung nennt Make, Google Sheets, Resend und Stripe – nur zutreffend, wenn diese Dienste tatsächlich genutzt und die AV-Verträge abgeschlossen werden; sonst Text anpassen.
+
+**Abweichungen vom Plan:**
+- Statt eines Commits pro Maßnahme wurden Phase 0–2 gemeinsam committet, weil das neue Datenmodell (`src/types.ts`) Server und Client gleichzeitig betrifft.
+- Paket-Klicks werden nur einmal pro Sitzung gezählt (erste Wahl), damit die Klickrate ≤ 100 % bleibt.
+- Admin-Aufruf nur noch über `?admin` / `#admin`: Vorher öffnete jede URL mit „pilot“ oder „leads“ im Query-String das Admin-Modal – also auch Anzeigen-Links mit `utm_campaign=hemdenpilot`.
+
 Reihenfolge: **Phase 0 muss vor dem ersten Euro Werbebudget fertig sein.** Phase 1 und 2 vor dem Ad-Start, Phase 3 läuft parallel außerhalb des Codes.
 
 ---
