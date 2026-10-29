@@ -19,7 +19,7 @@ Prüfen vor jedem Push: `npm run lint` (TypeScript) und `npm run build`.
 | Variable | Zweck |
 |---|---|
 | `ADMIN_TOKEN` | Zugang zum Lead Management Center. Mindestens 32 Zeichen (`openssl rand -hex 32`). Ohne Token sind alle Admin-Routen gesperrt. |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | E-Mail-Benachrichtigung je Lead über Resend. Ohne verifizierte Absenderadresse läuft Resend im Sandbox-Modus. |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | E-Mail-Benachrichtigung je Lead über Resend. Ohne verifizierte Absenderadresse läuft Resend im Sandbox-Modus und stellt nur an `RESEND_ACCOUNT_EMAIL` (Adresse des Resend-Kontos) zu. |
 | `LEAD_NOTIFICATION_EMAIL` | Empfänger der Benachrichtigungen (Produktivmodus). |
 | `LEAD_WEBHOOK_URL` | **Dauerhafte Ablage der Leads**, z. B. Make-Szenario „Custom Webhook → Google Sheets: Add a Row“. Der Server sendet `{ type: 'private' \| 'company', lead }`. |
 | `STRIPE_DEPOSIT_URL` | Stripe Payment Link für die erstattbare Anzahlung (19 €). Ohne Wert wird die Anzahlung nicht angeboten. Der Link erhält `client_reference_id` (= Reservierungs-ID) und `prefilled_email`. |

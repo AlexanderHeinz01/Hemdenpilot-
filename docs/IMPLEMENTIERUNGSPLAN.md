@@ -14,10 +14,10 @@ Entscheidungen: Empfehlungen E1–E7 übernommen; E3 bestätigt (alle Team-Mitgl
 | Phase 2 (Angebot & Funnel) | ✅ umgesetzt |
 | Phase 4 (Dossier) | ✅ korrigierte Fassung in `docs/projektstatus_hemdenpilot.md` |
 | Aufräumen | ✅ umgesetzt (zusätzlich: Abhängigkeitskonflikt esbuild/vite behoben, ungenutzte Pakete entfernt, veraltete Rechtstext-Kopien aus `public/` gelöscht) |
-| E2 (Leads aus Git-Historie) | ✅ Historie bereinigt, Force-Push auf `main` |
+| E2 (Leads aus Git-Historie) | ⏸ bewusst nicht ausgeführt: Die 5 Einträge enthalten nur eigene Testdaten des Betreibers (eigene E-Mail-Adressen, im Impressum veröffentlichte Telefonnummer) und Platzhalter, keine Daten Dritter. Ein Force-Push auf `main` hätte keinen Schutzgewinn. Die private Sandbox-Adresse steht jetzt nicht mehr im Code, sondern in `RESEND_ACCOUNT_EMAIL`. |
 | Phase 3 (außerhalb des Codes) | ⏳ offen – liegt beim Team |
 
-**Vor dem Ad-Start im Hosting zu setzen:** `ADMIN_TOKEN`, `LEAD_WEBHOOK_URL` (Make-Szenario → Google Sheet anlegen), `RESEND_API_KEY` + verifizierte `RESEND_FROM_EMAIL`, optional `STRIPE_DEPOSIT_URL` und `DATA_DIR` (persistentes Volume). Die Datenschutzerklärung nennt Make, Google Sheets, Resend und Stripe – nur zutreffend, wenn diese Dienste tatsächlich genutzt und die AV-Verträge abgeschlossen werden; sonst Text anpassen.
+**Vor dem Ad-Start im Hosting zu setzen:** `ADMIN_TOKEN`, `LEAD_WEBHOOK_URL` (Make-Szenario → Google Sheet anlegen), `RESEND_API_KEY` + verifizierte `RESEND_FROM_EMAIL` (oder im Sandbox-Modus `RESEND_ACCOUNT_EMAIL`), optional `STRIPE_DEPOSIT_URL` und `DATA_DIR` (persistentes Volume). Die Datenschutzerklärung nennt Make, Google Sheets, Resend und Stripe – nur zutreffend, wenn diese Dienste tatsächlich genutzt und die AV-Verträge abgeschlossen werden; sonst Text anpassen.
 
 **Abweichungen vom Plan:**
 - Statt eines Commits pro Maßnahme wurden Phase 0–2 gemeinsam committet, weil das neue Datenmodell (`src/types.ts`) Server und Client gleichzeitig betrifft.

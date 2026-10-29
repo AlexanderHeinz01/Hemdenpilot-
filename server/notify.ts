@@ -7,7 +7,6 @@ import {
   SUBSIDY_OPTIONS,
 } from '../src/config/options';
 
-const SANDBOX_RECIPIENT = 'alexander84.heinz@googlemail.com';
 const DEFAULT_RECIPIENT = 'info@alexander-heinz.de';
 
 export function escapeHtml(value: unknown): string {
@@ -30,10 +29,12 @@ export function getNotificationStatus() {
   const resendConfigured = Boolean(process.env.RESEND_API_KEY?.startsWith('re_'));
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
   const isSandbox = fromEmail.includes('resend.dev');
+  // Im Resend-Sandbox-Modus akzeptiert Resend nur die E-Mail-Adresse des Resend-Kontos
+  const sandboxRecipient = (process.env.RESEND_ACCOUNT_EMAIL || '').trim() || resolveTargetEmail();
   return {
     resendConfigured,
     mode: isSandbox ? 'sandbox' : 'production',
-    recipient: isSandbox ? SANDBOX_RECIPIENT : resolveTargetEmail(),
+    recipient: isSandbox ? sandboxRecipient : resolveTargetEmail(),
     fromEmail,
     webhookConfigured: Boolean(process.env.LEAD_WEBHOOK_URL?.startsWith('https://')),
     depositConfigured: Boolean(process.env.STRIPE_DEPOSIT_URL?.startsWith('https://')),
