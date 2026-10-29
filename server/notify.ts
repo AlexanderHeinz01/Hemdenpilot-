@@ -1,5 +1,6 @@
 import type { CompanyLead, LeadData, StoredLead } from '../src/types';
 import { formatEuro } from '../src/config/pricing';
+import { describePlz } from '../src/data/mockRoutes';
 import {
   CURRENT_SOLUTION_OPTIONS,
   MONTHLY_SPEND_OPTIONS,
@@ -85,7 +86,7 @@ function privateLeadMail(lead: LeadData) {
     row('Name', escapeHtml(lead.contact.name)),
     row('E-Mail', escapeHtml(lead.contact.email)),
     row('Telefon', escapeHtml(lead.contact.phone || 'Keine Angabe')),
-    row('PLZ', `${escapeHtml(lead.contact.plz)} Stuttgart`),
+    row('PLZ', escapeHtml(describePlz(lead.contact.plz))),
     row('Übergabe', escapeHtml(`${h.location} (${h.slot})`)),
     h.type === 'B2B'
       ? row(
@@ -133,7 +134,7 @@ function companyLeadMail(lead: CompanyLead) {
     row('Ansprechpartner', escapeHtml(`${lead.contactName}${lead.role ? ` (${lead.role})` : ''}`)),
     row('E-Mail', escapeHtml(lead.email)),
     row('Telefon', escapeHtml(lead.phone || 'Keine Angabe')),
-    row('Standort-PLZ', `${escapeHtml(lead.plz)} Stuttgart`),
+    row('Standort-PLZ', escapeHtml(describePlz(lead.plz))),
     row('Interessierte Mitarbeiter', escapeHtml(String(lead.employeesInterested)), lead.employeesInterested >= 4),
     row('Arbeitgeberzuschuss', escapeHtml(SUBSIDY_OPTIONS[lead.employerSubsidy])),
     row('Nachricht', escapeHtml(lead.message || '-')),

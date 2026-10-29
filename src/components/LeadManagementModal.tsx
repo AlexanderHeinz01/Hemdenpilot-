@@ -24,6 +24,7 @@ import {
 } from '../config/options';
 import { formatEuro } from '../config/pricing';
 import { KpiPanel } from './admin/KpiPanel';
+import { describePlz } from '../data/mockRoutes';
 
 interface LeadManagementModalProps {
   isOpen: boolean;
@@ -510,7 +511,7 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({ isOpen
                                 {lead.contact.phone && <div className="text-[#866941] text-[11px] mt-0.5 font-mono">{lead.contact.phone}</div>}
                               </td>
                               <td className="py-3 px-3.5 align-top">
-                                <div className="font-semibold">PLZ {lead.contact.plz}</div>
+                                <div className="font-semibold">{describePlz(lead.contact.plz)}</div>
                                 <div className="text-[#57534E] text-[11px] mt-0.5 flex items-center gap-1">
                                   {lead.handover.type === 'B2B' ? <Building className="w-3 h-3 text-[#9A7B4F]" /> : <Home className="w-3 h-3" />}
                                   <span>{lead.handover.location}</span>
@@ -568,7 +569,7 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({ isOpen
                                 <div>{c.contactName}{c.role ? ` (${c.role})` : ''}</div>
                                 <div className="text-[#57534E] text-[11px]">{c.email}</div>
                               </td>
-                              <td className="py-3 px-3.5 align-top">{c.plz}</td>
+                              <td className="py-3 px-3.5 align-top">{describePlz(c.plz)}</td>
                               <td className={`py-3 px-3.5 align-top ${c.employeesInterested >= 4 ? 'font-semibold text-[#866941]' : ''}`}>{c.employeesInterested}</td>
                               <td className="py-3 px-3.5 align-top">{SUBSIDY_OPTIONS[c.employerSubsidy]}</td>
                               <td className="py-3 px-3.5 align-top text-[#57534E] text-[11px]">{formatDate(c.createdAt)}</td>
@@ -627,7 +628,7 @@ export const LeadManagementModal: React.FC<LeadManagementModalProps> = ({ isOpen
                       <>
                         <div><strong>{selected.company}</strong><br />{selected.contactName}{selected.role ? ` (${selected.role})` : ''}<br />{selected.email}<br />{selected.phone}</div>
                         <div className="pt-2 border-t border-[#E5E0D8]">
-                          PLZ {selected.plz} · {selected.employeesInterested} Mitarbeiter · Zuschuss: {SUBSIDY_OPTIONS[selected.employerSubsidy]}
+                          {describePlz(selected.plz)} · {selected.employeesInterested} Mitarbeiter · Zuschuss: {SUBSIDY_OPTIONS[selected.employerSubsidy]}
                         </div>
                         {selected.message && <div className="pt-2 border-t border-[#E5E0D8] whitespace-pre-wrap">{selected.message}</div>}
                       </>

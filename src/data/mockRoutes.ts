@@ -31,3 +31,14 @@ export function lookupPlz(p: string): PlzRouteInfo {
   }
   return { plz: clean, district: 'Außerhalb Stuttgart', status: 'planned' };
 }
+
+export function isInPilotArea(p: string): boolean {
+  return lookupPlz(p).status !== 'planned';
+}
+
+// Anzeige-Text für eine PLZ in Bestätigung, Mail und Admin, z. B. "70173 · Stuttgart-Mitte"
+export function describePlz(p: string): string {
+  const r = lookupPlz(p);
+  if (r.status === 'planned') return `${r.plz} · außerhalb des Pilotgebiets – Vormerkung`;
+  return `${r.plz} · ${r.district.split('/')[0].trim()}`;
+}

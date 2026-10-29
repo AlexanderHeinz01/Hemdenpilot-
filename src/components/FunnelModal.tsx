@@ -5,6 +5,7 @@ import { submitPrivateLead, fetchPublicConfig, CONTACT_EMAIL } from '../services
 import { getAttribution, getPriceVariant } from '../services/session';
 import { track } from '../services/tracking';
 import { openLegal } from '../services/legal';
+import { describePlz, isInPilotArea } from '../data/mockRoutes';
 import { PILOT_SPOTS, formatEuro, getPricing } from '../config/pricing';
 import {
   COLLEAGUE_OPTIONS,
@@ -714,7 +715,9 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
             </h3>
 
             <p className="m-0 text-[13px] sm:text-[14px] leading-[1.7] text-[#57534E] max-w-[420px] text-pretty font-jakarta">
-              Vielen Dank, {confirmedLead.contact.name}. Wir melden uns per E-Mail, sobald Ihre Route in PLZ {confirmedLead.contact.plz} startet. Ihr erster Monat kostet {formatEuro(confirmedLead.firstMonthPrice)} statt {formatEuro(confirmedLead.pricePerMonth)}.
+              Vielen Dank, {confirmedLead.contact.name}. {isInPilotArea(confirmedLead.contact.plz)
+                ? `Wir melden uns per E-Mail, sobald Ihre Route in PLZ ${confirmedLead.contact.plz} startet.`
+                : `Ihre PLZ ${confirmedLead.contact.plz} liegt außerhalb unseres Stuttgarter Pilotgebiets. Wir melden uns per E-Mail, sobald wir Ihre Region erschließen.`} Ihr erster Monat kostet {formatEuro(confirmedLead.firstMonthPrice)} statt {formatEuro(confirmedLead.pricePerMonth)}.
             </p>
 
             {/* Summary Table */}
@@ -739,7 +742,7 @@ export const FunnelModal: React.FC<FunnelModalProps> = ({
                   k: 'Übergabe',
                   v: `${confirmedLead.handover.location} (${confirmedLead.handover.slot})`,
                 },
-                { k: 'PLZ', v: `${confirmedLead.contact.plz} Stuttgart` },
+                { k: 'PLZ', v: describePlz(confirmedLead.contact.plz) },
               ].map((row, idx) => (
                 <div
                   key={idx}
